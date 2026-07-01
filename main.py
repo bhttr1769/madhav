@@ -8,8 +8,9 @@ from memory_manager import (
     get_memories_text,
     get_profile
 )
-import re
 from logger import log_action
+from actions import create_folder
+import re
 
 print("╔══════════════════════╗")
 print("║      MADHAV v2       ║")
@@ -85,6 +86,39 @@ while True:
     lower = user_input.lower()
 
     # ----------------------------
+    # Create folder command
+    # ----------------------------
+
+    folder_match = re.search(
+        r"create (?:a )?folder(?: named)? (.+)",
+        lower
+    )
+
+    if folder_match:
+        folder_name = folder_match.group(1).strip()
+
+        print(
+            f"\nMadhav wants to create:\n"
+            f"{folder_name}\n"
+        )
+
+        choice = input(
+            "Proceed? [Y/N]: "
+        ).strip().lower()
+
+        if choice == "y":
+            success, message = create_folder(
+                folder_name
+            )
+            print(f"\nMadhav: {message}\n")
+        else:
+            print(
+                "\nMadhav: Action cancelled.\n"
+            )
+
+        continue
+
+    # ----------------------------
     # Save profile information
     # ----------------------------
 
@@ -107,7 +141,11 @@ while True:
     )
 
     if language_match1:
-        language = language_match1.group(1).strip().title()
+        language = (
+            language_match1.group(1)
+            .strip()
+            .title()
+        )
         set_favorite_language(language)
 
     language_match2 = re.search(
@@ -117,7 +155,11 @@ while True:
     )
 
     if language_match2:
-        language = language_match2.group(1).strip().title()
+        language = (
+            language_match2.group(1)
+            .strip()
+            .title()
+        )
 
         blocked_words = [
             "what",
@@ -140,7 +182,9 @@ while True:
         if name:
             print(f"\nMadhav: You are {name}.\n")
         else:
-            print("\nMadhav: I don't know your name yet.\n")
+            print(
+                "\nMadhav: I don't know your name yet.\n"
+            )
 
         continue
 
@@ -178,8 +222,13 @@ while True:
 
         for key, value in profile.items():
             if value:
-                label = key.replace("_", " ").title()
-                response += f"{label}: {value}\n"
+                label = (
+                    key.replace("_", " ")
+                    .title()
+                )
+                response += (
+                    f"{label}: {value}\n"
+                )
 
         if memories:
             response += (
@@ -188,7 +237,9 @@ while True:
             )
 
         if not response:
-            response = "I don't know much about you yet."
+            response = (
+                "I don't know much about you yet."
+            )
 
         print(f"\nMadhav:\n{response}\n")
         continue
@@ -199,17 +250,28 @@ while True:
 
     if should_remember(user_input):
         print("\nThis seems important.")
-        print(f'\nRemember:\n"{user_input}"\n')
+        print(
+            f'\nRemember:\n"{user_input}"\n'
+        )
 
-        choice = input("[Y/N]: ").strip().lower()
+        choice = input(
+            "[Y/N]: "
+        ).strip().lower()
 
         if choice == "y":
             add_memory(user_input)
-            log_action(
-    f"Remembered: {user_input}"
-)
 
-    print("\nMadhav: I'll remember that.\n")
+            log_action(
+                f"Remembered: {user_input}"
+            )
+
+            print(
+                "\nMadhav: I'll remember that.\n"
+            )
+
+    # ----------------------------
+    # Chat with Ollama
+    # ----------------------------
 
     memory_context = get_memories_text()
 
@@ -234,8 +296,14 @@ while True:
 
     model = choose_model(user_input)
 
-    print(f"\n[Madhav is thinking using {model}...]\n")
-    print("Madhav: ", end="", flush=True)
+    print(
+        f"\n[Madhav is thinking using {model}...]\n"
+    )
+    print(
+        "Madhav: ",
+        end="",
+        flush=True
+    )
 
     assistant_reply = ""
 
@@ -249,7 +317,11 @@ while True:
         for chunk in stream:
             piece = chunk["message"]["content"]
             assistant_reply += piece
-            print(piece, end="", flush=True)
+            print(
+                piece,
+                end="",
+                flush=True
+            )
 
         print("\n")
 
@@ -281,4 +353,6 @@ while True:
         print(
             "Please make sure Ollama is running."
         )
-        print(f"\nDetails: {e}\n")
+        print(
+            f"\nDetails: {e}\n"
+        )
