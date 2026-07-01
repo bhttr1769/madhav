@@ -93,7 +93,7 @@ def handle_commands(user_input):
     # ----------------------------
 
     read_match = re.search(
-        r"(?:read|open|show)\s+(.+)",
+        r"(?:read|open)\s+(.+)",
         user_input,
         re.IGNORECASE
     )
