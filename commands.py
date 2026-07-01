@@ -93,10 +93,22 @@ def handle_commands(user_input):
     # ----------------------------
 
     read_match = re.search(
-        r"(?:read|open)\s+(.+)",
-        user_input,
-        re.IGNORECASE
+    r"(?:read|open)\s+(.+)",
+    user_input,
+    re.IGNORECASE
     )
+
+    if read_match:
+      file_name = (
+        read_match.group(1)
+        .strip()
+        )
+
+    if (
+        file_name.startswith("http://")
+        or file_name.startswith("https://")
+    ):
+        return False
 
     if read_match:
         file_name = (

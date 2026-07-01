@@ -91,10 +91,10 @@ while True:
         break
 
     lower = user_input.lower()
-    if handle_commands(user_input):
-        continue
-    
     if handle_plugins(user_input):
+        continue
+
+    if handle_commands(user_input):
         continue
 
     # ----------------------------
