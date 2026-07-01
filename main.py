@@ -10,13 +10,6 @@ from memory_manager import (
     get_profile
 )
 from logger import log_action
-from actions import (
-    create_folder,
-    create_file,
-    read_file,
-    append_to_file,
-    run_command
-)
 import re
 
 print("╔══════════════════════╗")
