@@ -1,4 +1,5 @@
 import json
+from memory_classifier import classify_memory
 from pathlib import Path
 from datetime import datetime
 
@@ -21,7 +22,17 @@ def load_memory():
 
     try:
         with open(MEMORY_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
+            memory = json.load(f)
+            memory.setdefault("profile", {})
+            memory.setdefault("preferences", {})
+            memory.setdefault("projects", [])
+            memory.setdefault("memories", [])
+            memory["profile"].setdefault("name", "")
+            memory["profile"].setdefault(
+            "favorite_language",
+             ""
+    )
+        return memory
 
     except (json.JSONDecodeError, FileNotFoundError):
         print(
@@ -38,20 +49,29 @@ def save_memory(memory):
 def add_memory(text):
     memory = load_memory()
 
-    text = text.strip()
-
-    for m in memory["memories"]:
-        if m["text"].lower() == text.lower():
+    for item in memory["memories"]:
+        if (
+            item["text"].lower()
+            == text.lower()
+        ):
             return
+
+    category, importance = (
+        classify_memory(text)
+    )
 
     memory["memories"].append(
         {
             "text": text,
-            "timestamp": datetime.now().isoformat()
+            "category": category,
+            "importance": importance,
+            "timestamp":
+                datetime.now().isoformat()
         }
     )
 
     save_memory(memory)
+
 
 
 def set_name(name):
@@ -88,4 +108,78 @@ def get_memories_text():
 def get_profile():
     memory = load_memory()
     return memory["profile"]
+
+
+def get_memories_by_category(
+    category
+):
+    memory = load_memory()
+
+    results = []
+
+    for item in memory["memories"]:
+        if (
+            item.get("category")
+            == category
+        ):
+            results.append(
+                item["text"]
+            )
+
+    return results
+
+
+def get_important_memories(
+    limit=5
+):
+    memory = load_memory()
+
+    memories = sorted(
+        memory["memories"],
+        key=lambda x:
+            x.get(
+                "importance",
+                0
+            ),
+        reverse=True
+    )
+
+    return memories[:limit]
+
+
+def upgrade_memories():
+    memory = load_memory()
+    changed = False
+
+    for item in memory["memories"]:
+        if "category" not in item:
+            category, importance = classify_memory(
+                item["text"]
+            )
+
+            item["category"] = category
+            item["importance"] = importance
+            changed = True
+
+    if changed:
+        save_memory(memory)
+        
+       
+def reclassify_memories():
+    memory = load_memory()
+
+    for item in memory["memories"]:
+        category, importance = (
+            classify_memory(
+                item["text"]
+            )
+        )
+
+        item["category"] = category
+        item["importance"] = importance
+
+    save_memory(memory)
+
+
+        
 

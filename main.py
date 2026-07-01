@@ -7,7 +7,10 @@ from memory_manager import (
     get_name,
     get_favorite_language,
     get_memories_text,
-    get_profile
+    get_profile,
+    get_memories_by_category,
+    get_important_memories,
+    upgrade_memories
 )
 from logger import log_action
 import re
@@ -21,6 +24,7 @@ with open("prompts/system.txt", "r", encoding="utf-8") as f:
     SYSTEM_PROMPT = f.read()
 
 conversation = []
+upgrade_memories()
 
 
 def choose_model(prompt):
@@ -157,6 +161,84 @@ while True:
             )
 
         continue
+    
+    if (
+        "my goals" in lower
+        or "what are my goals" in lower
+    ):
+        goals = (
+            get_memories_by_category(
+                "goal"
+            )
+        )
+
+        if goals:
+            print("\nMadhav:")
+
+            for goal in goals:
+                print(f"- {goal}")
+
+            print()
+        else:
+            print(
+                "\nMadhav: "
+                "I don't know your goals yet.\n"
+            )
+
+        continue
+
+    if (
+        "my projects" in lower
+        or "what projects" in lower
+    ):
+        projects = (
+            get_memories_by_category(
+                "project"
+            )
+        )
+
+        if projects:
+            print("\nMadhav:")
+
+            for project in projects:
+                print(f"- {project}")
+
+            print()
+        else:
+            print(
+                "\nMadhav: "
+                "I don't know your projects yet.\n"
+            )
+
+        continue
+
+    if (
+        "important things" in lower
+        or "most important things" in lower
+    ):
+        memories = (
+            get_important_memories()
+        )
+
+        if memories:
+            print(
+                "\nMadhav:"
+            )
+
+            for item in memories:
+                print(
+                    f"- {item['text']}"
+                )
+
+            print()
+        else:
+            print(
+                "\nMadhav: "
+                "I don't know much about you yet.\n"
+            )
+
+        continue
+
 
     if (
         "what is my favorite language" in lower
