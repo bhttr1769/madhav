@@ -9,3 +9,8 @@ memory/
 .env.*
 
 *_backup.py
+.venv/
+__pycache__/
+*.pyc
+logs/
+*_backup.py

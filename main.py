@@ -9,6 +9,7 @@ from memory_manager import (
     get_profile
 )
 import re
+from logger import log_action
 
 print("╔══════════════════════╗")
 print("║      MADHAV v2       ║")
@@ -204,7 +205,11 @@ while True:
 
         if choice == "y":
             add_memory(user_input)
-            print("\nMadhav: I'll remember that.\n")
+            log_action(
+    f"Remembered: {user_input}"
+)
+
+    print("\nMadhav: I'll remember that.\n")
 
     memory_context = get_memories_text()
 
