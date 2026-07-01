@@ -12,6 +12,9 @@ from memory_manager import (
     get_important_memories,
     upgrade_memories
 )
+from plugin_manager import (
+    handle_plugins
+)
 from logger import log_action
 import re
 
@@ -90,7 +93,9 @@ while True:
     lower = user_input.lower()
     if handle_commands(user_input):
         continue
-
+    
+    if handle_plugins(user_input):
+        continue
 
     # ----------------------------
     # Save profile information
