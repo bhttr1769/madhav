@@ -1,5 +1,38 @@
 import os
 import re
+from pathlib import Path
+
+def copy_template(
+    template_name,
+    project_name,
+    destination
+):
+    template_dir = (
+        Path("templates")
+        / template_name
+    )
+
+    for file in template_dir.iterdir():
+        content = (
+            file.read_text(
+                encoding="utf-8"
+            )
+        )
+
+        content = content.replace(
+            "{{PROJECT_NAME}}",
+            project_name
+        )
+
+        target = (
+            Path(destination)
+            / file.name
+        )
+
+        target.write_text(
+            content,
+            encoding="utf-8"
+        )
 
 
 def create_project(project_name):
@@ -13,29 +46,17 @@ def create_project(project_name):
         exist_ok=True
     )
 
-    files = [
+    copy_template(
+        "python_app",
+        project_name,
+        folder
+    )
+
+    created = [
         "README.md",
         "main.py",
         "requirements.txt"
     ]
-
-    created = []
-
-    for file in files:
-        path = os.path.join(
-            folder,
-            file
-        )
-
-        if not os.path.exists(path):
-            with open(
-                path,
-                "w",
-                encoding="utf-8"
-            ):
-                pass
-
-        created.append(file)
 
     return folder, created
 
