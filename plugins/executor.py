@@ -1,6 +1,8 @@
+
 import os
 import re
 from pathlib import Path
+
 
 def copy_template(
     template_name,
@@ -35,9 +37,47 @@ def copy_template(
         )
 
 
-def create_project(project_name):
+def detect_template(user_input):
+    lower = user_input.lower()
+
+    if "flask" in lower:
+        return "flask_api"
+
+    return "python_app"
+
+
+def get_project_folder(
+    project_name
+):
     folder = os.path.join(
         "projects",
+        project_name
+    )
+
+    if not os.path.exists(folder):
+        return folder
+
+    counter = 1
+
+    while True:
+        new_folder = os.path.join(
+            "projects",
+            f"{project_name}_{counter}"
+        )
+
+        if not os.path.exists(
+            new_folder
+        ):
+            return new_folder
+
+        counter += 1
+
+
+def create_project(
+    project_name,
+    template
+):
+    folder = get_project_folder(
         project_name
     )
 
@@ -47,23 +87,22 @@ def create_project(project_name):
     )
 
     copy_template(
-        "python_app",
+        template,
         project_name,
         folder
     )
 
-    created = [
-        "README.md",
-        "main.py",
-        "requirements.txt"
-    ]
+    created = []
+
+    for file in os.listdir(folder):
+        created.append(file)
 
     return folder, created
 
 
 def handle(user_input):
     match = re.search(
-        r"create (?:a )?python (.+)",
+        r"create (.+)",
         user_input,
         re.IGNORECASE
     )
@@ -71,12 +110,38 @@ def handle(user_input):
     if not match:
         return False
 
-    project_name = (
+    request = (
         match.group(1)
         .strip()
-        .lower()
-        .replace(" ", "_")
     )
+
+    template = detect_template(
+        user_input
+    )
+
+    project_name = request.lower()
+
+    words_to_remove = {
+        "python",
+        "flask",
+        "spring",
+        "boot",
+        "react",
+        "app",
+        "api",
+        "a"
+    }
+
+    words = []
+
+    for word in project_name.split():
+        if word not in words_to_remove:
+            words.append(word)
+
+    project_name = "_".join(words)
+
+    if not project_name:
+        project_name = "my_project"
 
     print(
         "\nMadhav:\n"
@@ -96,7 +161,8 @@ def handle(user_input):
 
     folder, files = (
         create_project(
-            project_name
+            project_name,
+            template
         )
     )
 
@@ -112,6 +178,3 @@ def handle(user_input):
     print()
 
     return True
-
-
-
