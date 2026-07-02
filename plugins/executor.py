@@ -14,9 +14,32 @@ def copy_template(
         / template_name
     )
 
-    for file in template_dir.iterdir():
+    for item in template_dir.rglob("*"):
+        relative = (
+            item.relative_to(
+                template_dir
+            )
+        )
+
+        target = (
+            Path(destination)
+            / relative
+        )
+
+        if item.is_dir():
+            target.mkdir(
+                parents=True,
+                exist_ok=True
+            )
+            continue
+
+        target.parent.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+
         content = (
-            file.read_text(
+            item.read_text(
                 encoding="utf-8"
             )
         )
@@ -26,16 +49,10 @@ def copy_template(
             project_name
         )
 
-        target = (
-            Path(destination)
-            / file.name
-        )
-
         target.write_text(
             content,
             encoding="utf-8"
         )
-
 
 def detect_template(user_input):
     lower = user_input.lower()
@@ -43,8 +60,13 @@ def detect_template(user_input):
     if "flask" in lower:
         return "flask_api"
 
-    return "python_app"
+    if (
+        "spring boot" in lower
+        or "spring" in lower
+    ):
+        return "spring_boot"
 
+    return "python_app"
 
 def get_project_folder(
     project_name

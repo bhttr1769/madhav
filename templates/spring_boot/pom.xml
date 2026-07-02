@@ -1,0 +1,9 @@
+<project>
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.madhav</groupId>
+
+    <artifactId>{{PROJECT_NAME}}</artifactId>
+
+    <version>0.0.1</version>
+</project>
