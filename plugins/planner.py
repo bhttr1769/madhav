@@ -4,7 +4,7 @@ from ollama import chat
 
 def handle(user_input):
     match = re.search(
-        r"(?:build|create|make)(?: me)?\s+(.+)",
+        r"(?:build|make)(?: me)?\s+(.+)",
         user_input,
         re.IGNORECASE
     )
