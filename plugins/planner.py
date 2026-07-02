@@ -1,5 +1,6 @@
 import re
 from ollama import chat
+import planner_state
 
 
 def handle(user_input):
@@ -52,12 +53,14 @@ Task:
         print(f"Task: {task}\n")
         print("Plan:\n")
         print(plan)
+        
+        planner_state.pending_plan = {
+            "task": task,
+            "plan": plan
+        }
 
         print(
-            "\nPlanning mode only."
-        )
-        print(
-            "Execution agent will be added later.\n"
+             "\nExecute this plan? [Y/N]\n"
         )
 
     except Exception as e:

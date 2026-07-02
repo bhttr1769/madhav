@@ -1,4 +1,5 @@
 from ollama import chat
+import planner_state
 from commands import handle_commands
 from memory_manager import (
     add_memory,
@@ -85,6 +86,41 @@ def should_remember(text):
 
 while True:
     user_input = input("You: ").strip()
+    if (
+        planner_state.pending_plan
+        and user_input.lower() == "y"
+    ):
+        
+        task = (
+            planner_state
+            .pending_plan["task"]
+        )
+
+        print(
+            "\nMadhav:\n"
+            f"Executing: {task}\n"
+        )
+        
+        planner_state.pending_plan = None
+    
+        if handle_plugins(
+            f"create {task}" 
+            ):
+            continue
+
+
+    if (
+        planner_state.pending_plan
+        and user_input.lower() == "n"
+    ):
+        print(
+            "\nMadhav:\n"
+            "Plan cancelled.\n"
+        )
+
+        planner_state.pending_plan = None
+        continue
+
 
     if user_input.lower() == "exit":
         print("\nGoodbye, Parth.")
