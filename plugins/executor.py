@@ -2,6 +2,9 @@
 import os
 import re
 from pathlib import Path
+from code_generator import (
+    generate_python_code
+)
 
 
 def copy_template(
@@ -187,6 +190,35 @@ def handle(user_input):
             template
         )
     )
+
+    if template == "python_app":
+        success, code = (
+            generate_python_code(
+                project_name
+            )
+        )
+
+    if success:
+        main_file = (
+            Path(folder)
+            / "main.py"
+        )
+
+        main_file.write_text(
+            code,
+            encoding="utf-8"
+        )
+
+        print(
+            "✓ Generated AI code"
+        )
+    else:
+        print(
+            "\nMadhav:\n"
+            f"Code generation failed:\n"
+            f"{code}\n"
+        )
+
 
     print(
         f"\n✓ Created {folder}"
