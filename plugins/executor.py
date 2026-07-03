@@ -5,6 +5,9 @@ from pathlib import Path
 from code_generator import (
     generate_python_code
 )
+from multi_file_generator import (
+    generate_todo_project
+)
 
 
 def copy_template(
@@ -191,34 +194,67 @@ def handle(user_input):
         )
     )
 
-    if template == "python_app":
+    if (
+        template == "python_app"
+        and "todo" in project_name
+    ):
+        success, generated_files = (
+            generate_todo_project()
+        )
+
+        if success:
+            for (
+                file_name,
+            	content
+            ) in generated_files.items():
+
+                file_path = (
+                    Path(folder)
+                    / file_name
+                )
+
+                file_path.write_text(
+                    content,
+                    encoding="utf-8"
+                )
+
+                print(
+                    f"✓ Generated {file_name}"
+                )
+
+        else:
+            print(
+                "\nMadhav:\n"
+                f"{generated_files}\n"
+            )
+
+    elif template == "python_app":
         success, code = (
             generate_python_code(
                 project_name
             )
         )
 
-    if success:
-        main_file = (
-            Path(folder)
-            / "main.py"
-        )
+        if success:
+            main_file = (
+                Path(folder)
+                / "main.py"
+            )
 
-        main_file.write_text(
-            code,
-            encoding="utf-8"
-        )
+            main_file.write_text(
+                code,
+                encoding="utf-8"
+            )
 
-        print(
-            "✓ Generated AI code"
-        )
-    else:
-        print(
-            "\nMadhav:\n"
-            f"Code generation failed:\n"
-            f"{code}\n"
-        )
+            print(
+                "✓ Generated AI code"
+            )
 
+        else:
+            print(
+                "\nMadhav:\n"
+                f"{code}\n"
+            )
 
     print(
         f"\n✓ Created {folder}"
