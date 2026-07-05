@@ -20,3 +20,33 @@ def log_action(action):
         f.write(
             f"[{timestamp}] {action}\n"
         )
+
+def log_error(error):
+    log_action(
+        f"ERROR: {error}"
+    )
+
+
+def clear_logs():
+    LOG_FILE.parent.mkdir(
+        exist_ok=True
+    )
+
+    with open(
+        LOG_FILE,
+        "w",
+        encoding="utf-8"
+    ):
+        pass
+
+
+def get_logs():
+    if not LOG_FILE.exists():
+        return ""
+
+    with open(
+        LOG_FILE,
+        "r",
+        encoding="utf-8"
+    ) as f:
+        return f.read()

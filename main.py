@@ -18,10 +18,18 @@ from plugin_manager import (
 )
 from logger import log_action
 import re
+import session_memory as memory
+import command_history
+import logger
+import terminal_ui as tui
+from chat_input import get_input
 
 print("╔══════════════════════╗")
 print("║      MADHAV v2       ║")
 print("╚══════════════════════╝")
+logger.log_action(
+    "MADHAV STARTED"
+)
 print("Type 'exit' to quit.\n")
 
 with open("prompts/system.txt", "r", encoding="utf-8") as f:
@@ -85,7 +93,19 @@ def should_remember(text):
 
 
 while True:
-    user_input = input("You: ").strip()
+
+    user_input = get_input()
+    if not user_input:
+        continue
+
+    if user_input:
+        command_history.add(
+            user_input
+        )
+
+    logger.log_action(
+    f"COMMAND: {user_input}"
+)
     if (
         planner_state.pending_plan
         and user_input.lower() == "y"
@@ -127,10 +147,16 @@ while True:
         break
 
     lower = user_input.lower()
-    if handle_plugins(user_input):
-        continue
+
+    memory.set(
+        "last_command",
+        user_input
+    )
 
     if handle_commands(user_input):
+        continue
+
+    if handle_plugins(user_input):
         continue
 
     # ----------------------------
@@ -154,6 +180,42 @@ while True:
         lower,
         re.IGNORECASE
     )
+
+    if language_match1:
+        language = (
+            language_match1.group(1)
+            .strip()
+            .title()
+        )
+        set_favorite_language(language)
+
+    language_match2 = re.search(
+        r"([a-zA-Z+#]+)\s+is my favou?rite language$",
+        lower,
+        re.IGNORECASE
+    )
+
+    if language_match2:
+        language = (
+            language_match2.group(1)
+            .strip()
+            .title()
+        )
+
+        blocked_words = [
+            "what",
+            "which",
+            "who",
+            "why",
+            "how"
+        ]
+
+        if language.lower() not in blocked_words:
+            set_favorite_language(language)
+        r".*my favou?rite language is\s+(.+)",
+        lower,
+        re.IGNORECASE
+        
 
     if language_match1:
         language = (
@@ -448,4 +510,8 @@ while True:
         )
         print(
             f"\nDetails: {e}\n"
+        )
+
+        logger.log_error(
+            str(e)
         )
