@@ -143,7 +143,7 @@ For the complete system design, see **ARCHITECTURE.md**.
 
 ## Phase 5 — AI Software Engineering
 
-## Phase 6 — User Interface
+## Phase 6 — Developer Experience
 
 ## Phase 7 — Knowledge & Continuity Engine
 
