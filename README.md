@@ -114,51 +114,6 @@ The experience is.
 
 ---
 
-# Product Architecture
-
-Madhav is built in layers.
-
-Each layer has a single responsibility.
-
-```text
-Product
-│
-├── Local-First AI Operating System
-│
-├── Continuity Engine
-│   ├── Knowledge Continuity
-│   ├── Project Continuity
-│   ├── Decision Continuity
-│   ├── Goal Continuity
-│   └── Workflow Continuity
-│
-├── Intelligence Layer
-│   ├── Project Intelligence
-│   ├── Knowledge Intelligence
-│   ├── Decision Intelligence
-│   ├── Workflow Intelligence
-│   └── Personal Intelligence
-│
-└── Capability Layer
-    ├── Local LLMs
-    ├── Runtime Manager
-    ├── Memory
-    ├── RAG
-    ├── Semantic Search
-    ├── Planning
-    ├── Automation
-    ├── Machine Control
-    ├── Git & GitHub
-    ├── Plugin System
-    └── Multi-Agent System
-```
-
-Every capability exists to strengthen continuity and autonomicity.
-
-They are tools, not the product itself.
-
----
-
 # Roadmap
 
 ## Phase 1 — Foundation
