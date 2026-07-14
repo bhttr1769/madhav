@@ -114,158 +114,46 @@ The experience is.
 
 ---
 
+## Product Overview
+
+Madhav is built as a layered system.
+
+At the highest level, it consists of:
+
+* **AI Operating System** – The user-facing product.
+* **Continuity Engine** – Preserves knowledge, projects, decisions, goals, and context over time.
+* **Intelligence Layer** – Understands projects, knowledge, workflows, and user intent.
+* **Capability Layer** – Provides the underlying tools such as memory, RAG, planning, automation, local LLMs, runtime management, Git integration, plugins, and machine control.
+
+This layered design keeps the product modular, scalable, and runtime-independent.
+
+For the complete system design, see **ARCHITECTURE.md**.
+
+---
+
 # Roadmap
 
 ## Phase 1 — Foundation
 
-Build the first working version of Madhav.
-
-Focus areas:
-
-* Local AI chat
-* Basic architecture
-* Prompt system
-* Memory foundation
-* Safe local execution
-
----
-
 ## Phase 2 — Memory & Personalization
-
-Teach Madhav to remember.
-
-Focus areas:
-
-* Session memory
-* User preferences
-* Persistent memory
-* Memory management
-* Personal context
-
----
 
 ## Phase 3 — Actions & Automation
 
-Allow Madhav to interact with the local system.
-
-Focus areas:
-
-* File operations
-* Folder management
-* Terminal execution
-* Logging
-* Safety confirmations
-
----
-
 ## Phase 4 — Planning & Execution
-
-Separate thinking from doing.
-
-Focus areas:
-
-* Planner
-* Executor
-* Approval workflow
-* Task management
-* Safer automation
-
----
 
 ## Phase 5 — AI Software Engineering
 
-Turn Madhav into an AI capable of helping build software.
-
-Focus areas:
-
-* Code generation
-* Code editing
-* Multi-file project generation
-* Project templates
-* Development workflow
-
----
-
-## Phase 6 — Developer Experience
-
-Improve how users interact with Madhav.
-
-Focus areas:
-
-* Better terminal interface
-* Plugin system
-* Command history
-* Undo system
-* Session state
-* Logging improvements
-* Overall usability
-
----
+## Phase 6 — User Interface
 
 ## Phase 7 — Knowledge & Continuity Engine
 
-Help Madhav understand information instead of simply reading it.
-
-Focus areas:
-
-* Intelligent document reader
-* Project understanding
-* Codebase navigation
-* Persistent knowledge
-* Personal knowledge base
-* Retrieval-Augmented Generation (RAG)
-* Semantic search
-
----
-
 ## Phase 8 — Autonomous Software Engineer
-
-Enable Madhav to transform ideas into working software.
-
-Focus areas:
-
-* Requirement analysis
-* Architecture planning
-* Technology selection
-* Autonomous project generation
-* Self-debugging
-* Automated testing
-* Runtime management
-* Git & GitHub
-* Machine control
-
----
 
 ## Phase 9 — Multi-Agent Ecosystem
 
-Introduce specialized AI agents that work together.
-
-Focus areas:
-
-* Agent manager
-* Coding agent
-* Research agent
-* Testing agent
-* Documentation agent
-* DevOps agent
-* Shared context
-* Parallel execution
-
----
-
 ## Phase 10 — Self Evolution & Scale
 
-Allow Madhav to continuously improve over time.
-
-Focus areas:
-
-* Learning system
-* Personalized behaviour
-* Adaptive personality
-* Enterprise scaling
-* Plugin ecosystem
-* Public APIs
-* Long-running autonomous workflows
+For the complete roadmap and milestone breakdown, see ROADMAP.md.
 
 ---
 
