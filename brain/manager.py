@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from brain.models.document import Document
-from brain.parser.text_parser import TextParser
+from brain.registry.parser_registry import ParserRegistry
 from brain.registry.reader_registry import ReaderRegistry
 
 
@@ -12,10 +12,7 @@ class BrainManager:
 
     def __init__(self) -> None:
         self._reader_registry = ReaderRegistry()
-
-        self._parsers = {
-            ".txt": TextParser(),
-        }
+        self._parser_registry = ParserRegistry()
 
     def read(self, file_path: Path | str) -> Document:
         file_path = Path(file_path)
@@ -27,7 +24,7 @@ class BrainManager:
 
         document = reader.read(file_path)
 
-        parser = self._parsers.get(file_path.suffix.lower())
+        parser = self._parser_registry.get_parser(file_path)
 
         if parser is not None:
             document = parser.parse(document)
