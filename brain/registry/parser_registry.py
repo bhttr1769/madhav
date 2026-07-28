@@ -13,6 +13,8 @@ class ParserRegistry:
         self._parsers: dict[str, BaseParser] = {}
 
         self.register(".txt", TextParser())
+        self.register(".pdf", TextParser())
+        self.register(".docx", TextParser())
 
     def register(self, extension: str, parser: BaseParser) -> None:
         """
@@ -25,4 +27,9 @@ class ParserRegistry:
         Return the parser for the given file.
         """
         extension = Path(file_path).suffix.lower()
-        return self._parsers.get(extension)
+        parser = self._parsers.get(extension)
+
+        if parser is None:
+            raise UnsupportedFileTypeError(extension)
+
+        return parser

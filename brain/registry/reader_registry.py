@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from brain.exceptions.errors import UnsupportedFileTypeError
 from brain.io.base_reader import BaseReader
 from brain.io.readers.txt_reader import TXTReader
 from brain.io.readers.pdf_reader import PDFReader
@@ -24,10 +25,15 @@ class ReaderRegistry:
         """
         self._readers[extension.lower()] = reader
 
-    def get_reader(self, file_path: Path | str) -> BaseReader | None:
+    def get_reader(self, file_path: Path | str) -> BaseReader:
         """
         Return the reader for the given file.
         """
         extension = Path(file_path).suffix.lower()
 
-        return self._readers.get(extension)
+        reader = self._readers.get(extension)
+
+        if reader is None:
+            raise UnsupportedFileTypeError(extension)
+
+        return reader
