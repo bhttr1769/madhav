@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from brain.exceptions.errors import UnsupportedFileTypeError
 from brain.models.document import Document
 from brain.registry.parser_registry import ParserRegistry
 from brain.registry.reader_registry import ReaderRegistry
@@ -20,7 +21,9 @@ class BrainManager:
         reader = self._reader_registry.get_reader(file_path)
 
         if reader is None:
-            raise ValueError(f"Unsupported file type: {file_path.suffix}")
+            raise UnsupportedFileTypeError(
+                f"Unsupported file type: {file_path.suffix}"
+            )
 
         document = reader.read(file_path)
 
