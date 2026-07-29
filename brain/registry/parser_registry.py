@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from brain.factories.parser_factory import ParserFactory
 from brain.parser.base_parser import BaseParser
 from brain.parser.text_parser import TextParser
 from brain.config.parsing_config import ParsingConfig
@@ -14,7 +15,8 @@ class ParserRegistry:
     def __init__(self) -> None:
         self._parsers: dict[str, BaseParser] = {}
 
-        self.register(".txt",TextParser(config=ParsingConfig()))
+        for parser_type, parser in ParserFactory.create_parsers().items():
+            self.register(parser_type, parser)
         self.register(".pdf", TextParser(config=ParsingConfig()))
         self.register(".docx", TextParser(config=ParsingConfig()))
 
