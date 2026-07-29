@@ -1,6 +1,7 @@
 from brain.chunking.base_chunker import BaseChunker
 from brain.models.chunk import Chunk
 from brain.models.document import Document
+from brain.config.chunking_config import ChunkingConfig
 
 
 class FixedChunker(BaseChunker):
@@ -8,8 +9,8 @@ class FixedChunker(BaseChunker):
     Splits documents into fixed-size character chunks.
     """
 
-    def __init__(self, chunk_size: int = 500):
-        self.chunk_size = chunk_size
+    def __init__(self, config: ChunkingConfig):
+        self._config = config
 
     def chunk(self, document: Document) -> list[Chunk]:
 
@@ -19,9 +20,9 @@ class FixedChunker(BaseChunker):
 
         chunk_id = 0
 
-        for start in range(0, len(text), self.chunk_size):
+        for start in range(0, len(text), self._config.chunk_size):
 
-            end = min(start + self.chunk_size, len(text))
+            end = min(start + self._config.chunk_size, len(text))
 
             chunk_text = text[start:end]
 

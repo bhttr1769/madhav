@@ -1,5 +1,6 @@
 from brain.chunking.fixed_chunker import FixedChunker
 from brain.models.document import Document
+from brain.config.chunking_config import ChunkingConfig
 
 
 def test_fixed_chunker_creates_chunks():
@@ -14,7 +15,9 @@ def test_fixed_chunker_creates_chunks():
         modified_at=None,
     )
 
-    chunker = FixedChunker(chunk_size=500)
+    chunker = FixedChunker(
+        config=ChunkingConfig(chunk_size=500)
+    )
 
     chunks = chunker.chunk(document)
 

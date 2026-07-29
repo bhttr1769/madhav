@@ -3,6 +3,7 @@ from pathlib import Path
 
 from brain.models.document import Document
 from brain.parser.text_parser import TextParser
+from brain.config.parsing_config import ParsingConfig
 
 
 def test_text_parser():
@@ -17,7 +18,9 @@ def test_text_parser():
         modified_at=datetime.now(),
     )
 
-    parser = TextParser()
+    parser = TextParser(
+        config=ParsingConfig()
+    )
 
     parsed = parser.parse(document)
 
