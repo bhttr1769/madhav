@@ -5,6 +5,7 @@ from brain.io.base_reader import BaseReader
 from brain.io.readers.txt_reader import TXTReader
 from brain.io.readers.pdf_reader import PDFReader
 from brain.io.readers.docx_reader import DocxReader
+from brain.factories.reader_factory import ReaderFactory
 
 
 class ReaderRegistry:
@@ -15,9 +16,8 @@ class ReaderRegistry:
     def __init__(self) -> None:
         self._readers: dict[str, BaseReader] = {}
 
-        self.register(".txt", TXTReader())
-        self.register(".pdf", PDFReader())
-        self.register(".docx", DocxReader())
+        for extension, reader in ReaderFactory.create_readers().items():
+            self.register(extension, reader)
 
     def register(self, extension: str, reader: BaseReader) -> None:
         """

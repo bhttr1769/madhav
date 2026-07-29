@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from brain.factory.document_factory import DocumentFactory
+from brain.factories.document_factory import DocumentFactory
 
 
 def test_document_factory_creates_document():

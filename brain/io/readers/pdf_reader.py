@@ -2,7 +2,7 @@ from pathlib import Path
 
 from pypdf import PdfReader as PyPdfReader
 
-from brain.factory.document_factory import DocumentFactory
+from brain.factories.document_factory import DocumentFactory
 from brain.io.base_reader import BaseReader
 from brain.models.document import Document
 
