@@ -1,7 +1,5 @@
 from brain.chunking.base_chunker import BaseChunker
-from brain.chunking.fixed_chunker import FixedChunker
-from brain.config.chunking_config import ChunkingConfig
-
+from brain.factories.chunker_factory import ChunkerFactory
 
 class ChunkerRegistry:
     """
@@ -9,9 +7,7 @@ class ChunkerRegistry:
     """
 
     def __init__(self) -> None:
-        self._chunker: BaseChunker = FixedChunker(
-                config=ChunkingConfig()
-        )
+        self._chunker: BaseChunker = ChunkerFactory.create_default()
 
     def get_chunker(self) -> BaseChunker:
         return self._chunker
