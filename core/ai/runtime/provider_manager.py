@@ -25,9 +25,7 @@ class ProviderManager:
         provider = self._providers.get(name)
 
         if provider is None:
-            raise ProviderNotFoundError(
-                f"Provider '{name}' is not registered."
-            )
+            raise ProviderNotFoundError(name)
 
         return provider
     def get_chat_provider(self, name: str) -> BaseChatProvider:

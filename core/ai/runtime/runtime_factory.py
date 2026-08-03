@@ -4,6 +4,7 @@ from core.ai.runtime.ai_runtime import AIRuntime
 from core.ai.runtime.provider_manager import ProviderManager
 from core.ai.services.chat_service import ChatService
 from core.ai.services.embedding_service import EmbeddingService
+from core.ai.services.health_service import HealthService
 
 
 class RuntimeFactory:
@@ -30,9 +31,15 @@ class RuntimeFactory:
             provider_manager=provider_manager,
         )
 
+        health_service = HealthService(
+            config=config,
+            provider_manager=provider_manager,
+        )
+
         return AIRuntime(
             config=config,
             provider_manager=provider_manager,
             chat=chat_service,
             embedding=embedding_service,
+            health=health_service,
         )

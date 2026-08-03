@@ -33,6 +33,13 @@ def main():
     print(f"Vector Dimensions : {len(vector)}")
     print(f"First 10 values   : {vector[:10]}")
 
+    #Test Health
+    print("\n===== HEALTH =====")
+
+    health = runtime.health.status()
+
+    print(health)
+
 
 if __name__ == "__main__":
     main()
