@@ -6,7 +6,6 @@ import undo_manager
 import os
 import shutil
 import plugin_manager
-import terminal_ui as tui
 from task_state import (
     get_state
 )
@@ -252,11 +251,10 @@ def handle_commands(user_input):
             success, message = (
                 run_command(command)
             )
-            tui.success(
-                message
-            )
 
-            tui.blank()
+            print(
+                f"\nMadhav:\n{message}\n"
+            )
         else:
             print(
                 "\nMadhav: Action cancelled.\n"
@@ -269,16 +267,12 @@ def handle_commands(user_input):
     # ----------------------------
 
     if user_input.lower() == "status":
-
-        tui.section(
-            "System"
+        print(
+            f"\nMadhav:\n"
+            f"Current State: "
+            f"{get_state()}\n"
         )
 
-        tui.info(
-            f"State : {get_state()}"
-    )
-
-        tui.blank()
         return True
 
     # ----------------------------
@@ -287,15 +281,10 @@ def handle_commands(user_input):
 
     
     if user_input.lower() == "memory":
-        tui.section(
-            "Memory"
-        )
-
         print(
-        memory.all()
+            f"\nMadhav:\n"
+            f"{memory.all()}\n"
         )
-
-        tui.blank()
         return True
 
     if user_input.lower() == "clear memory":
@@ -394,14 +383,10 @@ def handle_commands(user_input):
         if not logs:
             logs = "No logs found."
 
-
-        tui.section(
-            "Logs"
+        print(
+            f"\nMadhav:\n"
+            f"{logs}\n"
         )
-
-        print(logs)
-
-        tui.blank()
 
         return True
     
@@ -412,96 +397,6 @@ def handle_commands(user_input):
             "\nMadhav:\n"
             "Logs cleared.\n"
         )
-
-        return True
-    
-    if user_input.lower() == "plugins":
-        plugins = (
-            plugin_manager.get_plugins()
-        )
-
-        tui.section(
-            "Plugins"
-        )
-
-        for(
-            name,
-            enabled
-        ) in plugins.items():
-
-            status = (
-                "✓"
-                if enabled
-                else "✗"
-            )
-
-        print(
-            f"{status} {name}"
-        )
-
-        tui.blank()
-
-        return True
-
-    enable_match = re.search(
-        r"enable (.+)",
-        user_input,
-        re.IGNORECASE
-        )
-
-    if enable_match:
-        plugin_name = (
-            enable_match.group(1)
-            .strip()
-        )
-
-        success = (
-            plugin_manager.enable_plugin(
-                plugin_name
-            )
-        )
-
-        if success:
-            print(
-                f"\nMadhav:\n"
-                f"Enabled {plugin_name}\n"
-            )
-        else:
-            print(
-                "\nMadhav:\n"
-                "Plugin not found.\n"
-            )
-
-        return True
-
-    disable_match = re.search(
-        r"disable (.+)",
-        user_input,
-        re.IGNORECASE
-    )
-
-    if disable_match:
-        plugin_name = (
-            disable_match.group(1)
-            .strip()
-        )
-
-        success = (
-            plugin_manager.disable_plugin(
-                plugin_name
-            )
-        )
-
-        if success:
-            print(
-                f"\nMadhav:\n"
-                f"Disabled {plugin_name}\n"
-            )
-        else:
-            print(
-                "\nMadhav:\n"
-                "Plugin not found.\n"
-            )
 
         return True
 

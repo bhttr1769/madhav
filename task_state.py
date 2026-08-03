@@ -8,13 +8,13 @@ class TaskState:
     FAILED = "FAILED"
 
 
-current_state = TaskState.IDLE
+_current_state = TaskState.IDLE
 
 
 def set_state(state):
-    global current_state
-    current_state = state
+    global _current_state
+    _current_state = state
 
 
 def get_state():
-    return current_state
+    return _current_state
