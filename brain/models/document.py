@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from datetime import datetime
 from typing import Any
+from brain.models.chunk import Chunk
 
 
 @dataclass
@@ -31,8 +32,6 @@ class Document:
     language: str = "unknown"
     source: str = "local"
 
-    # ---------- Future ----------
+    chunks: list[Chunk] = field(default_factory=list)
 
-    chunks: list[str] = field(default_factory=list)
-    embedding: list[float] | None = None
     metadata: dict[str, Any] = field(default_factory=dict)

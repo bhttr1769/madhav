@@ -5,17 +5,30 @@ from typing import Any
 @dataclass
 class Chunk:
     """
-    Represents the smallest unit of knowledge in Madhav.
+    Represents a single chunk of a document.
     """
 
+    # ---------- Identity ----------
+
     id: int
+
+    # ---------- Content ----------
+
     text: str
+
+    # ---------- Location ----------
 
     start_char: int
     end_char: int
 
-    token_count: int = 0
+    # ---------- Statistics ----------
+
+    token_count: int
+
+    # ---------- AI ----------
 
     embedding: list[float] | None = None
+
+    # ---------- Metadata ----------
 
     metadata: dict[str, Any] = field(default_factory=dict)

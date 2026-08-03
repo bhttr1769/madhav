@@ -1,10 +1,9 @@
 from brain.manager import BrainManager
-from brain.factories.brain_factory import BrainFactory
-
+from tests.utils.testing_factory import TestBrainFactory
 
 def test_brain_manager_reads_and_parses_txt():
 
-    manager = BrainFactory.create()
+    manager = TestBrainFactory.create()
 
     document = manager.read("tests/models/sample.txt")
 

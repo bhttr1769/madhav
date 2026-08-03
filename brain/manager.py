@@ -27,4 +27,6 @@ class BrainManager:
 
         document.chunks = chunker.chunk(document)
 
+        document = self._config.embedding_pipeline.process(document)
+
         return document
