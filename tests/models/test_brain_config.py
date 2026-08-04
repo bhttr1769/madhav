@@ -7,6 +7,14 @@ from brain.factories.embedding_factory import EmbeddingFactory
 from brain.embedding.embedding_pipeline import EmbeddingPipeline
 
 
+class FakeSearcher:
+    def search(self, query):
+        return []
+    
+class FakeMemoryPipeline:
+    def ingest(self, document):
+        pass
+
 def test_brain_config_creation():
     config = BrainConfig(
         reader_registry=ReaderRegistry(),
@@ -17,6 +25,8 @@ def test_brain_config_creation():
                 EmbeddingConfig()
             )
         ),
+        memory_pipeline=FakeMemoryPipeline(),
+        semantic_searcher=FakeSearcher(),
     )
 
     assert isinstance(config.reader_registry, ReaderRegistry)

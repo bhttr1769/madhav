@@ -47,7 +47,7 @@ def test_returns_most_similar_vector():
         Vector([1.0, 0.0])
     )
 
-    assert results[0].id == "A"
+    assert results[0].record.id == "A"
 
 
 def test_limit_results():
@@ -67,10 +67,12 @@ def test_limit_results():
 
     results = search.search(
         Vector([1.0, 1.0]),
-        limit=3,
     )
 
-    assert len(results) == 3
+    assert len(results) == 10
+
+    assert results[0].score >= results[1].score
+    assert results[1].score >= results[2].score
 
 
 def test_empty_store():

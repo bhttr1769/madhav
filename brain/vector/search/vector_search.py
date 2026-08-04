@@ -4,6 +4,7 @@ from brain.vector.similarity.cosine_similarity import (
     CosineSimilarity,
 )
 from brain.vector.storage.vector_store import VectorStore
+from brain.search.models.search_result import SearchResult
 
 
 class VectorSearch:
@@ -20,8 +21,7 @@ class VectorSearch:
     def search(
         self,
         query: Vector,
-        limit: int = 5,
-    ) -> list[VectorRecord]:
+    ) -> list[SearchResult]:
         """
         Return the most similar vector records.
         """
@@ -44,8 +44,15 @@ class VectorSearch:
             reverse=True,
         )
 
-        return [
-            record
-            for _, record
-            in scored_records[:limit]
-        ]
+        results = []
+
+        for score, record in scored_records:
+
+            results.append(
+                SearchResult(
+                    record=record,
+                    score=score,
+                )
+            )
+
+        return results

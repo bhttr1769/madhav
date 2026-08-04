@@ -2,6 +2,7 @@ from pathlib import Path
 
 from brain.models.document import Document
 from brain.config.brain_config import BrainConfig
+from brain.search.models.search_query import SearchQuery
 
 
 class BrainManager:
@@ -30,3 +31,31 @@ class BrainManager:
         document = self._config.embedding_pipeline.process(document)
 
         return document
+    
+    def learn(
+        self,
+        file_path: Path | str,
+        ) -> Document:
+        """
+        Learn a document by reading, processing,
+        and storing it in semantic memory.
+        """
+
+        document = self.read(file_path)
+
+        self._config.memory_pipeline.ingest(
+            document
+        )
+
+        return document
+    
+    def search(
+        self,
+        text: str,
+        ):
+
+        query = SearchQuery(text)
+
+        return self._config.semantic_searcher.search(
+            query
+        )

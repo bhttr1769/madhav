@@ -8,6 +8,14 @@ from brain.registry.reader_registry import ReaderRegistry
 from tests.embedding.fake_embedding import FakeEmbedding
 
 
+class FakeSearcher:
+    def search(self, query):
+        return []
+    
+class FakeMemoryPipeline:
+    def ingest(self, document):
+        pass
+
 class TestBrainFactory:
     """
     Factory used by unit tests.
@@ -26,6 +34,8 @@ class TestBrainFactory:
             embedding_pipeline=EmbeddingPipeline(
                 FakeEmbedding()
             ),
+            memory_pipeline=FakeMemoryPipeline(),
+            semantic_searcher=FakeSearcher(),
         )
 
         return BrainManager(config)

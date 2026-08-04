@@ -4,6 +4,8 @@ from brain.embedding.embedding_pipeline import EmbeddingPipeline
 from brain.registry.chunker_registry import ChunkerRegistry
 from brain.registry.parser_registry import ParserRegistry
 from brain.registry.reader_registry import ReaderRegistry
+from brain.search.services.semantic_searcher import SemanticSearcher
+from brain.pipeline.memory_pipeline import MemoryPipeline
 
 
 @dataclass(frozen=True)
@@ -16,3 +18,7 @@ class BrainConfig:
     chunker_registry: ChunkerRegistry
 
     embedding_pipeline: EmbeddingPipeline
+    
+    memory_pipeline: MemoryPipeline
+
+    semantic_searcher: SemanticSearcher

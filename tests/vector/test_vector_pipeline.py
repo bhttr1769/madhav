@@ -60,4 +60,4 @@ def test_complete_vector_pipeline(
 
     assert len(results) == 2
 
-    assert results[0].id == "1"
+    assert results[0].record.id == "1"
