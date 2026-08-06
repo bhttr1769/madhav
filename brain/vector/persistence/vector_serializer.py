@@ -30,6 +30,7 @@ class VectorSerializer:
                     "vector": record.vector.values,
                     "document_id": record.document_id,
                     "chunk_id": record.chunk_id,
+                    "text": record.text,
                     "metadata": record.metadata,
                 }
             )
@@ -71,6 +72,7 @@ class VectorSerializer:
                     ),
                     document_id=item["document_id"],
                     chunk_id=item["chunk_id"],
+                    text=item["text"],
                     metadata=item["metadata"],
                 )
             )

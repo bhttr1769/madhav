@@ -24,6 +24,7 @@ def test_save_and_load_vector_store(
             vector=Vector([1.0, 2.0]),
             document_id="doc",
             chunk_id=0,
+            text="Hello World",
         )
     )
 

@@ -10,6 +10,7 @@ def create_record(record_id: str) -> VectorRecord:
         vector=Vector([1.0, 2.0, 3.0]),
         document_id="doc1",
         chunk_id=0,
+        text="Hello World",
     )
 
 

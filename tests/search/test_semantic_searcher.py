@@ -28,6 +28,7 @@ class FakeVectorSearch:
                     vector=Vector([1.0, 0.0]),
                     document_id="doc",
                     chunk_id=0,
+                    text="Hello World",
                 ),
                 score=0.95,
             )

@@ -10,6 +10,7 @@ def test_search_result():
         vector=Vector([1.0]),
         document_id="doc",
         chunk_id=0,
+        text="Hello World",
     )
 
     result = SearchResult(

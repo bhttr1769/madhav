@@ -9,6 +9,7 @@ def test_vector_record_creation():
         vector=Vector([1.0, 2.0]),
         document_id="doc1",
         chunk_id=5,
+        text="Hello World",
     )
 
     assert record.id == "1"

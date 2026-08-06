@@ -61,3 +61,12 @@ class BrainManager:
         return self._config.semantic_searcher.search(
             query
         )
+        
+    def ask(
+        self,
+        question: str,
+    ) -> str:
+
+        return self._config.rag_service.ask(
+            question
+        )

@@ -20,6 +20,7 @@ def create_record(
         vector=Vector(values),
         document_id="doc",
         chunk_id=0,
+        text="Hello World",
     )
 
 

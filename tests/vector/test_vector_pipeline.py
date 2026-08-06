@@ -27,6 +27,7 @@ def test_complete_vector_pipeline(
             vector=Vector([1.0, 0.0]),
             document_id="doc",
             chunk_id=0,
+            text="Hello World",
         )
     )
 
@@ -36,6 +37,7 @@ def test_complete_vector_pipeline(
             vector=Vector([0.0, 1.0]),
             document_id="doc",
             chunk_id=1,
+            text="Hello World",
         )
     )
 

@@ -28,6 +28,8 @@ from brain.graph.pipeline.relationship_pipeline import (
     RelationshipPipeline,
 )
 
+from brain.rag.prompt_builder import PromptBuilder
+from brain.rag.rag_service import RagService
 
 class BrainFactory:
     """
@@ -59,6 +61,12 @@ class BrainFactory:
             store=memory.store,
         )
         
+        rag = RagService(
+            searcher=search,
+            prompt_builder=PromptBuilder(),
+            chat_service=runtime.chat,
+        )
+        
         graph_store = GraphStore()
         entity_pipeline = EntityPipeline(
             extractor=RuleBasedEntityExtractor(),
@@ -83,6 +91,7 @@ class BrainFactory:
             semantic_searcher=search.semantic_searcher,
             entity_pipeline=entity_pipeline,
             relationship_pipeline=relationship_pipeline,
+            rag_service=rag,
         )
 
         return BrainManager(config)

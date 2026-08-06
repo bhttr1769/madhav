@@ -10,6 +10,7 @@ from brain.pipeline.memory_pipeline import MemoryPipeline
 from brain.graph.pipeline.relationship_pipeline import (
     RelationshipPipeline,
 )
+from brain.rag.rag_service import RagService
 
 
 @dataclass(frozen=True)
@@ -30,3 +31,5 @@ class BrainConfig:
     entity_pipeline: EntityPipeline
     
     relationship_pipeline: RelationshipPipeline
+    
+    rag_service: RagService

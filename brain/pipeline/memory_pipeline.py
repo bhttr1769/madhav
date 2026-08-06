@@ -35,6 +35,7 @@ class MemoryPipeline:
                 vector=Vector(chunk.embedding),
                 document_id=document.name,
                 chunk_id=index,
+                text=chunk.text,
                 metadata=document.metadata,
             )
 

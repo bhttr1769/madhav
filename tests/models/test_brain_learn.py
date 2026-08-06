@@ -6,6 +6,7 @@ from brain.models.document import Document
 from brain.registry.chunker_registry import ChunkerRegistry
 from brain.registry.parser_registry import ParserRegistry
 from brain.registry.reader_registry import ReaderRegistry
+from tests.utils.fake_rag_service import FakeRagService
 
 
 class FakeEmbeddingPipeline:
@@ -67,6 +68,7 @@ def test_brain_learn():
         semantic_searcher=FakeSearcher(),
         entity_pipeline=FakeEntityPipeline(),
         relationship_pipeline=relationship_pipeline,
+        rag_service=FakeRagService(),
     )
 
     brain = FakeBrain(config)

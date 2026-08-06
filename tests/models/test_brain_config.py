@@ -5,6 +5,7 @@ from brain.registry.chunker_registry import ChunkerRegistry
 from brain.config.embedding_config import EmbeddingConfig
 from brain.factories.embedding_factory import EmbeddingFactory
 from brain.embedding.embedding_pipeline import EmbeddingPipeline
+from tests.utils.fake_rag_service import FakeRagService
 
 
 class FakeSearcher:
@@ -38,6 +39,7 @@ def test_brain_config_creation():
         semantic_searcher=FakeSearcher(),
         entity_pipeline=FakeEntityPipeline(),
         relationship_pipeline=FakeRelationshipPipeline(),
+        rag_service=FakeRagService(),
     )
 
     assert isinstance(config.reader_registry, ReaderRegistry)

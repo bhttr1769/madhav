@@ -7,6 +7,8 @@ from brain.registry.reader_registry import ReaderRegistry
 
 from tests.embedding.fake_embedding import FakeEmbedding
 
+from tests.utils.fake_rag_service import FakeRagService
+
 
 class FakeSearcher:
     def search(self, query):
@@ -45,7 +47,8 @@ class TestBrainFactory:
             memory_pipeline=FakeMemoryPipeline(),
             semantic_searcher=FakeSearcher(),
             entity_pipeline=FakeEntityPipeline(),
-            relationship_pipeline=FakeRelationshipPipeline()
+            relationship_pipeline=FakeRelationshipPipeline(),
+            rag_service=FakeRagService(),
         )
 
         return BrainManager(config)
