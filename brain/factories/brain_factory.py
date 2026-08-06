@@ -15,6 +15,19 @@ from core.ai.runtime.runtime_factory import RuntimeFactory
 from brain.factories.search_factory import SearchFactory
 from brain.factories.memory_factory import MemoryFactory
 
+from brain.graph.extraction.rule_based_entity_extractor import (
+    RuleBasedEntityExtractor,
+)
+from brain.graph.pipeline.entity_pipeline import EntityPipeline
+from brain.graph.storage.graph_store import GraphStore
+
+from brain.graph.extraction.rule_based_relationship_extractor import (
+    RuleBasedRelationshipExtractor,
+)
+from brain.graph.pipeline.relationship_pipeline import (
+    RelationshipPipeline,
+)
+
 
 class BrainFactory:
     """
@@ -45,7 +58,18 @@ class BrainFactory:
             runtime=runtime,
             store=memory.store,
         )
-
+        
+        graph_store = GraphStore()
+        entity_pipeline = EntityPipeline(
+            extractor=RuleBasedEntityExtractor(),
+            store=graph_store,
+        )
+        
+        relationship_pipeline = RelationshipPipeline(
+            extractor=RuleBasedRelationshipExtractor(),
+            store=graph_store,
+        )
+        
         config = BrainConfig(
             reader_registry=ReaderRegistry(),
             parser_registry=ParserRegistry(),
@@ -57,6 +81,8 @@ class BrainFactory:
             ),
             memory_pipeline=memory.pipeline,
             semantic_searcher=search.semantic_searcher,
+            entity_pipeline=entity_pipeline,
+            relationship_pipeline=relationship_pipeline,
         )
 
         return BrainManager(config)

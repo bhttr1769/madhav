@@ -15,6 +15,14 @@ class FakeSearcher:
 class FakeMemoryPipeline:
     def ingest(self, document):
         pass
+    
+class FakeEntityPipeline:
+    def process(self, document):
+        pass
+    
+class FakeRelationshipPipeline:
+    def process(self, document):
+        pass
 
 class TestBrainFactory:
     """
@@ -36,6 +44,8 @@ class TestBrainFactory:
             ),
             memory_pipeline=FakeMemoryPipeline(),
             semantic_searcher=FakeSearcher(),
+            entity_pipeline=FakeEntityPipeline(),
+            relationship_pipeline=FakeRelationshipPipeline()
         )
 
         return BrainManager(config)

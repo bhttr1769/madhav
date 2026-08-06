@@ -18,6 +18,14 @@ class FakeMemoryPipeline:
     def ingest(self, document):
         pass
 
+class FakeEntityPipeline:
+    def process(self, document):
+        pass
+
+class FakeRelationshipPipeline:
+    def process(self, document):
+        pass
+
 
 def test_brain_search():
 
@@ -28,6 +36,8 @@ def test_brain_search():
         embedding_pipeline=FakeEmbeddingPipeline(),
         memory_pipeline=FakeMemoryPipeline(),
         semantic_searcher=FakeSearcher(),
+        entity_pipeline=FakeEntityPipeline(),
+        relationship_pipeline=FakeRelationshipPipeline()
     )
 
     brain = BrainManager(config)

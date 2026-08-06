@@ -15,6 +15,15 @@ class FakeMemoryPipeline:
     def ingest(self, document):
         pass
 
+class FakeEntityPipeline:
+    def process(self, document):
+        pass
+
+class FakeRelationshipPipeline:
+    def process(self, document):
+        pass
+
+
 def test_brain_config_creation():
     config = BrainConfig(
         reader_registry=ReaderRegistry(),
@@ -27,6 +36,8 @@ def test_brain_config_creation():
         ),
         memory_pipeline=FakeMemoryPipeline(),
         semantic_searcher=FakeSearcher(),
+        entity_pipeline=FakeEntityPipeline(),
+        relationship_pipeline=FakeRelationshipPipeline(),
     )
 
     assert isinstance(config.reader_registry, ReaderRegistry)

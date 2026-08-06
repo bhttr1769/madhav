@@ -23,10 +23,21 @@ class FakeMemoryPipeline:
 
 
 class FakeSearcher:
-
     def search(self, query):
         return []
 
+
+class FakeEntityPipeline:
+    def process(self, document):
+        pass
+
+class FakeRelationshipPipeline:
+
+    def __init__(self):
+        self.called = False
+
+    def process(self, document):
+        self.called = True
 
 class FakeBrain(BrainManager):
 
@@ -45,6 +56,7 @@ class FakeBrain(BrainManager):
 def test_brain_learn():
 
     memory = FakeMemoryPipeline()
+    relationship_pipeline = FakeRelationshipPipeline()
 
     config = BrainConfig(
         reader_registry=ReaderRegistry(),
@@ -53,6 +65,8 @@ def test_brain_learn():
         embedding_pipeline=FakeEmbeddingPipeline(),
         memory_pipeline=memory,
         semantic_searcher=FakeSearcher(),
+        entity_pipeline=FakeEntityPipeline(),
+        relationship_pipeline=relationship_pipeline,
     )
 
     brain = FakeBrain(config)
@@ -60,3 +74,5 @@ def test_brain_learn():
     brain.learn("sample.txt")
 
     assert memory.ingested
+
+    assert relationship_pipeline.called

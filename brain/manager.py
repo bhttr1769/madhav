@@ -43,9 +43,11 @@ class BrainManager:
 
         document = self.read(file_path)
 
-        self._config.memory_pipeline.ingest(
-            document
-        )
+        self._config.memory_pipeline.ingest(document)
+        
+        self._config.entity_pipeline.process(document)
+        
+        self._config.relationship_pipeline.process(document)
 
         return document
     
