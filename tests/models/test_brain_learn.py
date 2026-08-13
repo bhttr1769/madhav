@@ -22,6 +22,19 @@ class FakeMemoryPipeline:
     def ingest(self, document):
         self.ingested = True
 
+class FakeMemoryManager:
+
+    def save(self, store):
+        pass
+
+
+class FakeMemoryRuntime:
+
+    def __init__(self):
+
+        self.store = None
+
+        self.manager = FakeMemoryManager()
 
 class FakeSearcher:
     def search(self, query):
@@ -65,6 +78,7 @@ def test_brain_learn():
         chunker_registry=ChunkerRegistry(),
         embedding_pipeline=FakeEmbeddingPipeline(),
         memory_pipeline=memory,
+        memory_runtime=FakeMemoryRuntime(),
         semantic_searcher=FakeSearcher(),
         entity_pipeline=FakeEntityPipeline(),
         relationship_pipeline=relationship_pipeline,

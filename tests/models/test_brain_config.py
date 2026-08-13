@@ -16,6 +16,20 @@ class FakeMemoryPipeline:
     def ingest(self, document):
         pass
 
+class FakeMemoryManager:
+
+    def save(self, store):
+        pass
+
+
+class FakeMemoryRuntime:
+
+    def __init__(self):
+
+        self.store = None
+
+        self.manager = FakeMemoryManager()
+
 class FakeEntityPipeline:
     def process(self, document):
         pass
@@ -36,6 +50,7 @@ def test_brain_config_creation():
             )
         ),
         memory_pipeline=FakeMemoryPipeline(),
+        memory_runtime=FakeMemoryRuntime(),
         semantic_searcher=FakeSearcher(),
         entity_pipeline=FakeEntityPipeline(),
         relationship_pipeline=FakeRelationshipPipeline(),

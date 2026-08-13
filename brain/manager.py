@@ -48,6 +48,8 @@ class BrainManager:
         self._config.entity_pipeline.process(document)
         
         self._config.relationship_pipeline.process(document)
+        
+        self._config.memory_runtime.manager.save(self._config.memory_runtime.store)
 
         return document
     

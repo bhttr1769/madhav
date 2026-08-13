@@ -30,6 +30,12 @@ class MemoryPipeline:
                     f"Chunk {chunk.id} has no embedding."
                 )
 
+            if self.has_document(
+                document.name
+            ):
+
+                return
+
             record = VectorRecord(
                 id=f"{document.name}:{index}",
                 vector=Vector(chunk.embedding),
@@ -40,3 +46,16 @@ class MemoryPipeline:
             )
 
             self._store.add(record)
+
+    def has_document(
+        self,
+        document_name: str,
+    ) -> bool:
+
+        for record in self._store.all():
+
+            if record.document_id == document_name:
+
+                return True
+
+        return False

@@ -88,6 +88,7 @@ class BrainFactory:
                 )
             ),
             memory_pipeline=memory.pipeline,
+            memory_runtime=memory,
             semantic_searcher=search.semantic_searcher,
             entity_pipeline=entity_pipeline,
             relationship_pipeline=relationship_pipeline,

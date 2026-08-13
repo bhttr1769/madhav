@@ -11,6 +11,7 @@ from brain.graph.pipeline.relationship_pipeline import (
     RelationshipPipeline,
 )
 from brain.rag.rag_service import RagService
+from brain.factories.memory_factory import MemoryRuntime
 
 
 @dataclass(frozen=True)
@@ -23,13 +24,15 @@ class BrainConfig:
     chunker_registry: ChunkerRegistry
 
     embedding_pipeline: EmbeddingPipeline
-    
+
     memory_pipeline: MemoryPipeline
 
+    memory_runtime: MemoryRuntime
+
     semantic_searcher: SemanticSearcher
-    
+
     entity_pipeline: EntityPipeline
-    
+
     relationship_pipeline: RelationshipPipeline
-    
+
     rag_service: RagService
