@@ -44,12 +44,14 @@ class BrainManager:
         document = self.read(file_path)
 
         self._config.memory_pipeline.ingest(document)
-        
+
         self._config.entity_pipeline.process(document)
-        
+
         self._config.relationship_pipeline.process(document)
-        
-        self._config.memory_runtime.manager.save(self._config.memory_runtime.store)
+
+        graph_store = (self._config.entity_pipeline._store)
+
+        self._config.graph_manager.save(graph_store)
 
         return document
     

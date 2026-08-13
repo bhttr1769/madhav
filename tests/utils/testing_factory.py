@@ -9,6 +9,10 @@ from tests.embedding.fake_embedding import FakeEmbedding
 
 from tests.utils.fake_rag_service import FakeRagService
 
+from brain.graph.persistence.graph_manager import (
+    GraphManager,
+)
+
 
 class FakeSearcher:
     def search(self, query):
@@ -63,6 +67,7 @@ class TestBrainFactory:
             semantic_searcher=FakeSearcher(),
             entity_pipeline=FakeEntityPipeline(),
             relationship_pipeline=FakeRelationshipPipeline(),
+            graph_manager=GraphManager("tests/data/graph.json",),
             rag_service=FakeRagService(),
         )
 

@@ -7,6 +7,12 @@ from brain.registry.chunker_registry import ChunkerRegistry
 from brain.registry.parser_registry import ParserRegistry
 from brain.registry.reader_registry import ReaderRegistry
 from tests.utils.fake_rag_service import FakeRagService
+from brain.graph.persistence.graph_manager import (
+    GraphManager,
+)
+from brain.graph.storage.graph_store import (
+    GraphStore,
+)
 
 
 class FakeEmbeddingPipeline:
@@ -41,8 +47,20 @@ class FakeSearcher:
         return []
 
 
+class FakeStore(GraphStore):
+    pass
+
+
 class FakeEntityPipeline:
-    def process(self, document):
+
+    def __init__(self):
+
+        self._store = FakeStore()
+
+    def process(
+        self,
+        document,
+    ):
         pass
 
 class FakeRelationshipPipeline:
@@ -82,6 +100,7 @@ def test_brain_learn():
         semantic_searcher=FakeSearcher(),
         entity_pipeline=FakeEntityPipeline(),
         relationship_pipeline=relationship_pipeline,
+        graph_manager=GraphManager("tests/data/graph.json",),
         rag_service=FakeRagService(),
     )
 

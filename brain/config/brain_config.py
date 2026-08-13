@@ -13,6 +13,10 @@ from brain.graph.pipeline.relationship_pipeline import (
 from brain.rag.rag_service import RagService
 from brain.factories.memory_factory import MemoryRuntime
 
+from brain.graph.persistence.graph_manager import (
+    GraphManager,
+)
+
 
 @dataclass(frozen=True)
 class BrainConfig:
@@ -34,5 +38,7 @@ class BrainConfig:
     entity_pipeline: EntityPipeline
 
     relationship_pipeline: RelationshipPipeline
+    
+    graph_manager: GraphManager
 
     rag_service: RagService

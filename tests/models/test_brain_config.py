@@ -6,6 +6,9 @@ from brain.config.embedding_config import EmbeddingConfig
 from brain.factories.embedding_factory import EmbeddingFactory
 from brain.embedding.embedding_pipeline import EmbeddingPipeline
 from tests.utils.fake_rag_service import FakeRagService
+from brain.graph.persistence.graph_manager import (
+    GraphManager,
+)
 
 
 class FakeSearcher:
@@ -54,6 +57,7 @@ def test_brain_config_creation():
         semantic_searcher=FakeSearcher(),
         entity_pipeline=FakeEntityPipeline(),
         relationship_pipeline=FakeRelationshipPipeline(),
+        graph_manager=GraphManager("tests/data/graph.json",),
         rag_service=FakeRagService(),
     )
 

@@ -31,6 +31,10 @@ from brain.graph.pipeline.relationship_pipeline import (
 from brain.rag.prompt_builder import PromptBuilder
 from brain.rag.rag_service import RagService
 
+from brain.graph.persistence.graph_manager import (
+    GraphManager,
+)
+
 class BrainFactory:
     """
     Responsible for creating fully configured BrainManager instances.
@@ -78,6 +82,10 @@ class BrainFactory:
             store=graph_store,
         )
         
+        graph_manager = GraphManager(
+            "brain/data/graph.json",
+        )
+        
         config = BrainConfig(
             reader_registry=ReaderRegistry(),
             parser_registry=ParserRegistry(),
@@ -92,6 +100,7 @@ class BrainFactory:
             semantic_searcher=search.semantic_searcher,
             entity_pipeline=entity_pipeline,
             relationship_pipeline=relationship_pipeline,
+            graph_manager=graph_manager,
             rag_service=rag,
         )
 
