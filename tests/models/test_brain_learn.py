@@ -34,21 +34,35 @@ class FakeMemoryManager:
         pass
 
 
+class FakeStore(GraphStore):
+
+    def has_document(
+        self,
+        document_id,
+    ):
+
+        return False
+
+    def remove_document(
+        self,
+        document_id,
+    ):
+
+        pass
+
+
 class FakeMemoryRuntime:
 
     def __init__(self):
 
-        self.store = None
+        self.store = FakeStore()
 
         self.manager = FakeMemoryManager()
+        
 
 class FakeSearcher:
     def search(self, query):
         return []
-
-
-class FakeStore(GraphStore):
-    pass
 
 
 class FakeEntityPipeline:

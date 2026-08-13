@@ -3,7 +3,9 @@ from pathlib import Path
 from brain.models.document import Document
 from brain.config.brain_config import BrainConfig
 from brain.search.models.search_query import SearchQuery
-
+from brain.utils.document_fingerprint import (
+    create_fingerprint,
+)
 
 class BrainManager:
     """
@@ -30,6 +32,8 @@ class BrainManager:
 
         document = self._config.embedding_pipeline.process(document)
 
+        document.metadata["fingerprint"] = create_fingerprint(document)
+
         return document
     
     def learn(
@@ -43,7 +47,19 @@ class BrainManager:
 
         document = self.read(file_path)
 
-        self._config.memory_pipeline.ingest(document)
+        if self._config.memory_runtime.store.has_document(
+            document.name
+        ):
+
+            self._config.memory_runtime.store.remove_document(
+                document.name
+            )
+
+        self._config.memory_pipeline.ingest(
+            document
+        )
+        
+        self._config.memory_runtime.manager.save(self._config.memory_runtime.store)
 
         self._config.entity_pipeline.process(document)
 

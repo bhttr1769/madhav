@@ -71,19 +71,20 @@ class BrainFactory:
             chat_service=runtime.chat,
         )
         
-        graph_store = GraphStore()
+        graph_manager = GraphManager(
+            "brain/data/graph.json",
+        )
+
+        graph_store = graph_manager.load()
+
         entity_pipeline = EntityPipeline(
             extractor=RuleBasedEntityExtractor(),
             store=graph_store,
         )
-        
+
         relationship_pipeline = RelationshipPipeline(
             extractor=RuleBasedRelationshipExtractor(),
             store=graph_store,
-        )
-        
-        graph_manager = GraphManager(
-            "brain/data/graph.json",
         )
         
         config = BrainConfig(

@@ -50,3 +50,35 @@ class VectorStore:
         Remove all stored records.
         """
         self._records.clear()
+
+    def has_document(
+        self,
+        document_id: str,
+    ) -> bool:
+        """
+        Check whether vectors for a document
+        already exist.
+        """
+
+        return any(
+            record.document_id == document_id
+            for record in self._records.values()
+        )
+
+    def remove_document(
+        self,
+        document_id: str,
+    ) -> None:
+        """
+        Remove all vectors belonging
+        to a document.
+        """
+
+        ids = [
+            record.id
+            for record in self._records.values()
+            if record.document_id == document_id
+        ]
+
+        for record_id in ids:
+            self.remove(record_id)

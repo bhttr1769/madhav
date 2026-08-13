@@ -779,7 +779,8 @@
             "word_count": 7,
             "character_count": 41,
             "empty_line_count": 0,
-            "reading_time_minutes": 1
+            "reading_time_minutes": 1,
+            "fingerprint": "d18d4deddac9c4a25d630f11bb3d966393fbf3c85dfc53397b9493f31dba419d"
         }
     }
 ]
