@@ -1,23 +1,24 @@
-import urllib.request
-
 from brain.browser.models.response import (
     Response,
 )
 
 
 class HttpClient:
-    """
-    Retrieves content from URLs.
-    """
+
+    def __init__(
+        self,
+        opener,
+    ):
+
+        self._opener = opener
 
     def get(
         self,
         url: str,
     ) -> Response:
 
-        with urllib.request.urlopen(
+        with self._opener.open(
             url,
-            timeout=10,
         ) as response:
 
             content = (

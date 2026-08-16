@@ -1,3 +1,4 @@
+import pytest
 from tests.browser.fake_graph_store import (
     FakeGraphStore,
 )
@@ -46,6 +47,9 @@ from brain.browser.registries.parser_registry import (
     ParserRegistry,
 )
 
+from tests.browser.fake_url_opener import (
+    FakeUrlOpener,
+)
 
 def test_browser_graph_learner():
 
@@ -82,7 +86,9 @@ def test_browser_graph_learner():
     )
 
     engine = BrowserEngine(
-        HttpClient(),
+        HttpClient(
+            FakeUrlOpener(),
+        ),
         loader_registry,
         parser_registry,
         extractor_registry,

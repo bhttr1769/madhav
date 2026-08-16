@@ -22,6 +22,10 @@ from brain.browser.url_validator import (
     UrlValidator,
 )
 
+from brain.browser.openers.local_url_opener import (
+    LocalUrlOpener,
+)
+
 
 class BrowserLearningPipeline:
     """
@@ -35,7 +39,9 @@ class BrowserLearningPipeline:
         )
 
         self._client = (
-            HttpClient()
+            HttpClient(
+                LocalUrlOpener(),
+            )
         )
 
         self._loader = (

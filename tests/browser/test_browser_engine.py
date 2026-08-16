@@ -1,3 +1,4 @@
+import pytest
 from brain.browser.browser_engine import (
     BrowserEngine,
 )
@@ -38,6 +39,10 @@ from brain.browser.registries.parser_registry import (
     ParserRegistry,
 )
 
+from tests.browser.fake_url_opener import (
+    FakeUrlOpener,
+)
+
 
 def test_browser_engine():
 
@@ -74,7 +79,9 @@ def test_browser_engine():
     )
 
     result = BrowserEngine(
-        HttpClient(),
+        HttpClient(
+            FakeUrlOpener(),
+        ),
         loader_registry,
         parser_registry,
         extractor_registry,
