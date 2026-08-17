@@ -8,11 +8,12 @@ from brain.workspace.workspace_summary_builder import (
     WorkspaceSummaryBuilder,
 )
 
+from brain.workspace.models.workspace import (
+    Workspace,
+)
+
 
 class WorkspaceManager:
-    """
-    High-level entry point for workspace intelligence.
-    """
 
     def __init__(
         self,
@@ -25,13 +26,24 @@ class WorkspaceManager:
             WorkspaceSummaryBuilder()
         )
 
+    def learn(
+        self,
+        workspace: str | Path,
+    ) -> Workspace:
+
+        return (
+            self._learner.learn(
+                workspace,
+            )
+        )
+
     def analyze(
         self,
         workspace: str | Path,
     ) -> dict:
 
         knowledge = (
-            self._learner.learn(
+            self.learn(
                 workspace,
             )
         )

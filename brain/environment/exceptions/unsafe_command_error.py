@@ -1,0 +1,4 @@
+class UnsafeCommandError(
+    Exception,
+):
+    pass
