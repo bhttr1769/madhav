@@ -27,6 +27,7 @@ def test_workspace():
             Signature(
                 value="main.py",
                 category="filename",
+                path="main.py",
             )
         },
     )

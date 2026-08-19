@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 
 
-@dataclass(frozen=True)
+@dataclass(
+    frozen=True,
+)
 class Signature:
     """
     A detectable workspace artifact.
@@ -10,3 +12,5 @@ class Signature:
     value: str
 
     category: str
+
+    path: str

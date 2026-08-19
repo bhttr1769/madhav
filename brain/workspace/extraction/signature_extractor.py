@@ -23,6 +23,7 @@ class SignatureExtractor:
                 Signature(
                     value=file.name,
                     category="filename",
+                    path=str(file),
                 )
             )
 
@@ -32,6 +33,7 @@ class SignatureExtractor:
                     Signature(
                         value=file.suffix.lower(),
                         category="extension",
+                        path=str(file),
                     )
                 )
 
@@ -43,6 +45,7 @@ class SignatureExtractor:
                         Signature(
                             value=str(parent),
                             category="directory",
+                            path=str(parent),
                         )
                     )
 

@@ -32,6 +32,7 @@ def test_workspace_summary_builder():
                 Signature(
                     value="main.py",
                     category="filename",
+                    path="main.py",
                 )
             },
         ),

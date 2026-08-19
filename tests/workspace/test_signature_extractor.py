@@ -14,9 +14,13 @@ def test_signature_extractor():
 
     signatures = (
         SignatureExtractor()
-    ).extract(files)
+    ).extract(
+        files,
+    )
 
-    assert len(signatures) > 0
+    assert len(
+        signatures,
+    ) > 0
 
     assert any(
         signature.value == ".py"
@@ -30,5 +34,19 @@ def test_signature_extractor():
 
     assert any(
         signature.value == "src"
+        for signature in signatures
+    )
+
+    assert any(
+        signature.path.endswith(
+            "main.py",
+        )
+        for signature in signatures
+    )
+
+    assert any(
+        signature.path.endswith(
+            "README.md",
+        )
         for signature in signatures
     )

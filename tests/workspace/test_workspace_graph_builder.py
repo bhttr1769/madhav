@@ -37,6 +37,7 @@ def test_workspace_graph_builder():
                 Signature(
                     value="main.py",
                     category="filename",
+                    path="main.py",
                 )
             },
         ),
