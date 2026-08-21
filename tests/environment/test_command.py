@@ -13,3 +13,28 @@ def test_command():
         command.value
         == "echo hello"
     )
+
+def test_command_to_action():
+
+    command = Command(
+        value="echo hello",
+    )
+
+    action = (
+        command.to_action()
+    )
+
+    assert (
+        action.name
+        == "execute"
+    )
+
+    assert (
+        action.category
+        == "command"
+    )
+
+    assert (
+        action.target
+        == "echo hello"
+    )
