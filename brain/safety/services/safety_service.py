@@ -10,6 +10,26 @@ from brain.safety.models.permission_decision import (
     PermissionDecision,
 )
 
+from brain.safety.models.risk import (
+    Risk,
+)
+
+from brain.safety.logging.models.action_log_event import (
+    ActionLogEvent,
+)
+
+from brain.safety.logging.models.action_log_status import (
+    ActionLogStatus,
+)
+
+from brain.safety.logging.services.logging_service import (
+    LoggingService,
+)
+
+from brain.safety.logging.stores.action_log_store import (
+    ActionLogStore,
+)
+
 from brain.safety.registries.policy_registry import (
     PolicyRegistry,
 )
@@ -39,13 +59,15 @@ class SafetyService:
     """
     Coordinates risk classification,
     permission evaluation, approval,
-    and execution authorization.
+    execution authorization, and
+    safety action logging.
     """
 
     def __init__(
         self,
         risk_registry: RiskClassifierRegistry,
         policy_registry: PolicyRegistry,
+        logging_service: LoggingService | None = None,
     ):
 
         self._risk_classifier = (
@@ -68,29 +90,21 @@ class SafetyService:
             ExecutionGuard()
         )
 
-    def evaluate(
-        self,
-        action: Action,
-    ) -> PermissionDecision:
-
-        risk = (
-            self._risk_classifier.classify(
-                action,
+        self._logging_service = (
+            logging_service
+            if logging_service is not None
+            else LoggingService(
+                ActionLogStore(),
             )
         )
 
-        return (
-            self._permission_evaluator.evaluate(
-                action,
-                risk,
-            )
-        )
-
-    def authorize(
+    def _evaluate(
         self,
         action: Action,
-        approval: ApprovalResponse | None = None,
-    ) -> None:
+    ) -> tuple[
+        PermissionDecision,
+        Risk,
+    ]:
 
         risk = (
             self._risk_classifier.classify(
@@ -104,6 +118,158 @@ class SafetyService:
                 risk,
             )
         )
+
+        return (
+            decision,
+            risk,
+        )
+
+    def evaluate(
+        self,
+        action: Action,
+    ) -> PermissionDecision:
+
+        self._logging_service.log(
+            action=action,
+            event=ActionLogEvent.REQUESTED,
+            status=ActionLogStatus.PENDING,
+        )
+
+        decision, risk = (
+            self._evaluate(
+                action,
+            )
+        )
+
+        if (
+            decision
+            == PermissionDecision.ALLOW
+        ):
+
+            status = (
+                ActionLogStatus.ALLOWED
+            )
+
+        elif (
+            decision
+            == PermissionDecision.DENY
+        ):
+
+            status = (
+                ActionLogStatus.DENIED
+            )
+
+        else:
+
+            status = (
+                ActionLogStatus.WAITING_APPROVAL
+            )
+
+        self._logging_service.log(
+            action=action,
+            event=ActionLogEvent.EVALUATED,
+            status=status,
+            metadata={
+                "risk": risk.value,
+                "decision": decision.value,
+            },
+        )
+
+        return decision
+
+    def authorize(
+        self,
+        action: Action,
+        approval: ApprovalResponse | None = None,
+    ) -> None:
+
+        decision, risk = (
+            self._evaluate(
+                action,
+            )
+        )
+
+        if (
+            decision
+            == PermissionDecision.ALLOW
+        ):
+
+            self._logging_service.log(
+                action=action,
+                event=ActionLogEvent.ALLOWED,
+                status=ActionLogStatus.ALLOWED,
+                metadata={
+                    "risk": risk.value,
+                },
+            )
+
+        elif (
+            decision
+            == PermissionDecision.DENY
+        ):
+
+            self._logging_service.log(
+                action=action,
+                event=ActionLogEvent.DENIED,
+                status=ActionLogStatus.DENIED,
+                metadata={
+                    "risk": risk.value,
+                },
+            )
+
+        elif (
+            decision
+            == PermissionDecision.ASK
+        ):
+
+            if (
+                approval
+                == ApprovalResponse.APPROVE
+            ):
+
+                self._logging_service.log(
+                    action=action,
+                    event=(
+                        ActionLogEvent
+                        .APPROVAL_GRANTED
+                    ),
+                    status=(
+                        ActionLogStatus.ALLOWED
+                    ),
+                    metadata={
+                        "risk": risk.value,
+                    },
+                )
+
+            elif (
+                approval
+                == ApprovalResponse.REJECT
+            ):
+
+                self._logging_service.log(
+                    action=action,
+                    event=(
+                        ActionLogEvent
+                        .APPROVAL_REJECTED
+                    ),
+                    status=(
+                        ActionLogStatus.DENIED
+                    ),
+                    metadata={
+                        "risk": risk.value,
+                    },
+                )
+
+                self._logging_service.log(
+                    action=action,
+                    event=ActionLogEvent.CANCELLED,
+                    status=ActionLogStatus.FAILED,
+                    metadata={
+                        "reason": (
+                            "User rejected approval."
+                        ),
+                    },
+                )
 
         self._execution_guard.authorize(
             action,
