@@ -14,3 +14,5 @@ class ImportModel:
     alias: str | None
 
     level: int = 0
+
+    path: str = ""

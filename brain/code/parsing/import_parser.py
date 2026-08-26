@@ -37,6 +37,7 @@ class ImportParser:
                             module=alias.name,
                             name=None,
                             alias=alias.asname,
+                            path=path,
                         )
                     )
 
@@ -58,6 +59,7 @@ class ImportParser:
                             name=alias.name,
                             alias=alias.asname,
                             level=node.level,
+                            path=path,
                         )
                     )
 
