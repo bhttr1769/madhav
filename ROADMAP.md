@@ -1,1224 +1,650 @@
-\# Madhav Roadmap
+MADHAV — ROADMAP
 
+Madhav is being built step by step.
 
+The idea is not to build a huge autonomous AI all at once. Each stage is meant to solve a real problem and create the foundation for the next one.
 
-> \*\*Living Document\*\*
+The roadmap will change as the project grows. If something turns out to be unnecessary, it can be removed. If something more important comes up, the roadmap can change.
 
->
+The basic rule is:
 
-> This roadmap defines the long-term vision, development strategy, and implementation plan for Madhav.
+Build the foundation first. Expand only when the previous layer is strong enough to support the next one.
 
->
 
-> It is expected to evolve as the project grows, but the core mission remains unchanged:
+ROADMAP OVERVIEW
 
->
+Phase 1 — Programming Foundation
+Phase 2 — Backend Engineering
+Phase 3 — Advanced Backend Engineering
+Phase 4 — AI Engineering
+Phase 5 — Madhav Architecture
+Phase 6 — Madhav Core
+Phase 7 — Knowledge & Continuity Engine
+Phase 8 — Tool Ecosystem
+Phase 9 — Autonomous Software Engineer
+Phase 10 — Multi-Agent Intelligence
+Phase 11 — Personal AI Operating System
+Phase 12 — Collaborative & Scalable AI Platform
 
-> \*\*Build Madhav into a Local-First AI Operating System that acts as a Continuity Engine, helping users preserve knowledge, projects, decisions, goals, workflows, and long-term context while gradually becoming capable of autonomous work under user control.\*\*
 
+PHASE 1 — PROGRAMMING FOUNDATION
 
+Goal
 
-\---
+Build the programming foundation needed to develop Madhav properly.
 
+Focus
 
+- Python
+- Programming fundamentals
+- Object-oriented programming
+- Data structures
+- Algorithms
+- File handling
+- Error handling
+- Testing
+- Clean code
+- Git fundamentals
 
-\# Product Vision
+Outcome
 
+The ability to understand, write, debug, and maintain the code that Madhav depends on.
 
+Before building intelligence, learn how to build software.
 
-Madhav is not another chatbot.
 
+PHASE 2 — BACKEND ENGINEERING
 
+Goal
 
-It is not another coding assistant.
+Build the backend engineering foundation required by Madhav.
 
+Focus
 
+- Backend architecture
+- HTTP
+- REST APIs
+- Databases
+- SQL
+- Application structure
+- Configuration
+- Logging
+- Testing
+- Service boundaries
+- API design
 
-It is not another AI wrapper.
+Outcome
 
+The ability to build reliable backend systems that can support Madhav's internal components.
 
+Intelligence needs a reliable system to live in.
 
-Madhav is being built as a \*\*Local-First AI Operating System\*\*.
 
+PHASE 3 — ADVANCED BACKEND ENGINEERING
 
+Goal
 
-Its defining capabilities are:
+Understand how systems behave as complexity and scale increase.
 
+Focus
 
+- System design
+- Concurrency
+- Distributed systems
+- Caching
+- Message queues
+- Background workers
+- Networking
+- Docker
+- DevOps
+- Observability
+- Performance
+- Scalability
+- Security
 
-\* \*\*Continuity\*\* — Nothing important should ever be forgotten.
+Outcome
 
-\* \*\*Autonomicity\*\* — The AI should gradually become capable of performing meaningful work while keeping the user in complete control.
+The engineering knowledge required to build Madhav so that future growth does not require rebuilding the entire system.
 
+Build today's system without creating tomorrow's limitations.
 
 
-The goal is to ensure that every interaction makes Madhav more useful than it was yesterday.
+PHASE 4 — AI ENGINEERING
 
+Goal
 
+Understand the technologies required to build modern AI systems.
 
-\---
+Focus
 
+- LLMs
+- Prompting
+- Context windows
+- Model inference
+- Embeddings
+- Vector search
+- RAG
+- Semantic retrieval
+- Tool calling
+- Agents
+- Model evaluation
+- Local model runtimes
+- AI system design
 
+Outcome
 
-\# Product Philosophy
+The ability to use AI models as components of a larger system instead of treating the model as the entire system.
 
+The model provides intelligence. The architecture gives it purpose.
 
 
-Every feature developed for Madhav must answer these questions:
+PHASE 5 — MADHAV ARCHITECTURE
 
+Goal
 
+Bring the engineering and AI foundations together into a coherent Madhav architecture.
 
-1\. What expensive user problem does this solve?
+Focus
 
-2\. Does it improve continuity?
+- Core project structure
+- Modular architecture
+- Interfaces
+- Dependency boundaries
+- Provider abstraction
+- LLM abstraction
+- Embedding abstraction
+- Domain models
+- Configuration
+- Logging
+- Error handling
+- Testing infrastructure
+- Component boundaries
 
-3\. Does it improve autonomicity?
+Outcome
 
-4\. Will it become more valuable over months and years?
+A stable architecture in which models, runtimes, databases, and other technologies can be replaced without redesigning Madhav from scratch.
 
-5\. Does it align with the long-term product vision?
+Technologies will change. The architecture should survive them.
 
 
+PHASE 6 — MADHAV CORE
 
-If the answer is no, the feature should be reconsidered.
+Goal
 
+Turn the architecture into a functional AI assistant.
 
+Focus
 
-\---
+- Core interaction loop
+- Context management
+- Persistent memory
+- Memory storage
+- Memory retrieval
+- User context
+- Project context
+- Tool definitions
+- Action models
+- Risk models
+- Permission system
+- Safe execution
+- Basic planning
 
+The basic flow:
 
+Request
+↓
+Understand
+↓
+Retrieve Context
+↓
+Plan
+↓
+Action
+↓
+Risk
+↓
+Permission
+↓
+Execute
 
-\# Development Strategy
+Outcome
 
+A functional Madhav capable of understanding requests, using context, deciding what it needs, and performing controlled actions.
 
+Capability without control is not intelligence.
 
-The project is divided into progressive phases.
 
+PHASE 7 — KNOWLEDGE & CONTINUITY ENGINE
 
+Goal
 
-Each phase builds on the previous one.
+Build the system that allows Madhav to preserve and retrieve useful knowledge over time.
 
+Focus
 
+- Document ingestion
+- Text processing
+- Chunking
+- Metadata
+- Embeddings
+- Vector storage
+- Semantic search
+- Retrieval
+- RAG
+- Knowledge management
+- Context ranking
+- Project understanding
+- Long-term continuity
 
-```text
+The important distinction is:
 
-Foundation
-
-&#x20;       ↓
+Memory
+What should Madhav remember?
 
 Knowledge
+What information exists?
 
-&#x20;       ↓
+Retrieval
+What is relevant right now?
 
-Understanding
+Context
+What should the model actually see?
 
-&#x20;       ↓
+Outcome
 
-Autonomous Engineering
+Madhav moves from simply storing information toward connecting knowledge, decisions, projects, and ongoing work.
 
-&#x20;       ↓
+Continuity begins when information stops being isolated.
 
-Multi-Agent Intelligence
 
-&#x20;       ↓
+PHASE 8 — TOOL ECOSYSTEM
 
-Self Evolution
+Goal
 
-```
+Give Madhav the ability to interact with the environment in which it works.
 
+Focus
 
+- File system
+- Terminal
+- Git
+- Repository understanding
+- Code analysis
+- Code modification
+- Testing tools
+- Project inspection
+- Development tools
+- Tool discovery
+- Tool permissions
+- Action verification
 
-The roadmap is intentionally incremental.
+The interaction model becomes:
 
-
-
-Every phase must produce a stable, usable system before moving to the next.
-
-
-
-\---
-
-
-
-\# Phase 1 — Foundation ✅
-
-
-
-\## Objective
-
-
-
-Create the first working version of Madhav.
-
-
-
-\### Major Goals
-
-
-
-\* Local LLM integration
-
-\* Interactive terminal
-
-\* Conversation loop
-
-\* Prompt system
-
-\* Local execution
-
-\* Basic project structure
-
-
-
-\### Outcome
-
-
-
-A functional local AI assistant capable of basic interaction.
-
-
-
-\---
-
-
-
-\# Phase 2 — Memory \& Personalization ✅
-
-
-
-\## Objective
-
-
-
-Teach Madhav to remember.
-
-
-
-\### Major Goals
-
-
-
-\* Persistent memory
-
-\* Session memory
-
-\* User preferences
-
-\* Memory classification
-
-\* Memory management
-
-\* Context preservation
-
-
-
-\### Outcome
-
-
-
-Madhav begins learning about its user instead of starting from zero every session.
-
-
-
-\---
-
-
-
-\# Phase 3 — Local Actions \& Automation ✅
-
-
-
-\## Objective
-
-
-
-Allow Madhav to safely interact with the operating system.
-
-
-
-\### Major Goals
-
-
-
-\* File creation
-
-\* Folder creation
-
-\* File reading
-
-\* File editing
-
-\* Append operations
-
-\* Local command execution
-
-\* Logging
-
-\* Safety confirmations
-
-
-
-\### Outcome
-
-
-
-Madhav becomes capable of performing useful local tasks.
-
-
-
-\---
-
-
-
-\# Phase 4 — Planning \& Execution ✅
-
-
-
-\## Objective
-
-
-
-Separate reasoning from execution.
-
-
-
-\### Major Goals
-
-
-
-\* Planner
-
-\* Executor
-
-\* Approval workflow
-
-\* Task planning
-
-\* Safe execution
-
-\* Execution tracking
-
-
-
-\### Outcome
-
-
-
-Madhav learns to think before acting.
-
-
-
-\---
-
-
-
-\# Phase 5 — AI Software Engineering ✅
-
-
-
-\## Objective
-
-
-
-Enable Madhav to assist with software development.
-
-
-
-\### Major Goals
-
-
-
-\* Code generation
-
-\* Code editing
-
-\* Multi-file generation
-
-\* Project templates
-
-\* Development workflow
-
-\* Project creation
-
-
-
-\### Outcome
-
-
-
-Madhav becomes capable of helping build software projects.
-
-
-
-\---
-
-
-
-\# Phase 6 — Developer Experience ✅
-
-
-
-\## Objective
-
-
-
-Create a polished development experience.
-
-
-
-\### Major Goals
-
-
-
-\* Plugin system
-
-\* Terminal improvements
-
-\* Command history
-
-\* Undo system
-
-\* Logging improvements
-
-\* Session state
-
-\* Better interaction flow
-
-
-
-\### Outcome
-
-
-
-Madhav becomes a practical daily development assistant.
-
-
-
-\---
-
-
-
-\# Phase 7 — Knowledge \& Continuity Engine
-
-
-
-\## Objective
-
-
-
-Teach Madhav to understand information instead of simply reading it.
-
-
-
-\---
-
-
-
-\## Sprint 7.1 — Knowledge Acquisition
-
-
-
-\### Goals
-
-
-
-\* Document Model
-
-\* TXT Reader
-
-\* Markdown Reader
-
-\* PDF Reader
-
-\* DOCX Reader
-
-\* Folder Reader
-
-\* Source Code Reader
-
-\* Unit Tests
-
-\* Integration Tests
-
-
-
-\---
-
-
-
-\## Sprint 7.2 — Knowledge Representation
-
-
-
-\### Goals
-
-
-
-\* Unified document structure
-
-\* Metadata extraction
-
-\* Chunking
-
-\* Language detection
-
-\* File relationships
-
-\* Knowledge objects
-
-
-
-\---
-
-
-
-\## Sprint 7.3 — Knowledge Retrieval
-
-
-
-\### Goals
-
-
-
-\* Semantic retrieval
-
-\* Similarity search
-
-\* Context retrieval
-
-\* Intelligent search
-
-\* Retrieval pipeline
-
-
-
-\---
-
-
-
-\## Sprint 7.4 — Project Intelligence
-
-
-
-\### Goals
-
-
-
-\* Project understanding
-
-\* Architecture analysis
-
-\* Dependency analysis
-
-\* Codebase navigation
-
-\* Function tracing
-
-\* Class tracing
-
-\* Execution flow analysis
-
-
-
-\---
-
-
-
-\## Sprint 7.5 — Continuity Engine
-
-
-
-\### Goals
-
-
-
-\* Decision memory
-
-\* Goal memory
-
-\* Workflow memory
-
-\* Project history
-
-\* Long-term continuity
-
-\* Context reconstruction
-
-
-
-\---
-
-
-
-\## Sprint 7.6 — Knowledge Intelligence
-
-
-
-\### Goals
-
-
-
-\* Personal knowledge base
-
-\* Research indexing
-
-\* Documentation understanding
-
-\* Book understanding
-
-\* Technical reference system
-
-
-
-\---
-
-
-
-\## Sprint 7.7 — Semantic Intelligence
-
-
-
-\### Goals
-
-
-
-\* Embeddings
-
-\* Vector database
-
-\* Semantic search
-
-\* Knowledge graph
-
-\* Relationship discovery
-
-\* Context ranking
-
-
-
-\---
-
-
-
-\## Phase 7 Outcome
-
-
-
-Madhav understands projects instead of merely reading files.
-
-
-
-\---
-
-
-
-\# Phase 8 — Autonomous Software Engineer
-
-
-
-\## Objective
-
-
-
-Enable Madhav to transform ideas into complete software.
-
-
-
-\---
-
-
-
-\## Stage A — Think
-
-
-
-\### Sprint 8.1 — Requirement Analysis
-
-
-
-\* Goal understanding
-
-\* Requirement gathering
-
-\* Clarification
-
-\* Constraint identification
-
-
-
-\---
-
-
-
-\### Sprint 8.2 — Architecture Design
-
-
-
-\* System architecture
-
-\* Folder structure
-
-\* API design
-
-\* Database planning
-
-\* Module planning
-
-
-
-\---
-
-
-
-\### Sprint 8.3 — Technology Selection
-
-
-
-\* Framework selection
-
-\* Library selection
-
-\* Database selection
-
-\* Build tools
-
-\* Runtime selection
-
-
-
-\---
-
-
-
-\## Stage B — Build
-
-
-
-\### Sprint 8.4 — Autonomous Project Builder
-
-
-
-\* Project generation
-
-\* Multi-file generation
-
-\* Production-ready code
-
-\* Dependency generation
-
-
-
-\---
-
-
-
-\### Sprint 8.5 — Self Debugging
-
-
-
-Development loop:
-
-
-
-```text
-
-Generate
-
-
-
+Understand
 ↓
-
-
-
-Run
-
-
-
+Plan
 ↓
-
-
-
-Detect Errors
-
-
-
+Use Tools
 ↓
+Observe
+↓
+Verify
+↓
+Continue
+
+Outcome
+
+Madhav can participate in real software development workflows instead of only discussing them.
+
+An engineering partner must be able to work with the environment, not just talk about it.
 
 
+PHASE 9 — AUTONOMOUS SOFTWARE ENGINEER
 
+Goal
+
+Move Madhav from tool-assisted development toward meaningful autonomous software engineering.
+
+Focus
+
+- Requirement understanding
+- Project analysis
+- Architecture planning
+- Implementation planning
+- Code generation
+- Code modification
+- Testing
+- Debugging
+- Code review
+- Documentation
+- Git workflows
+- Iterative execution
+- Verification
+- Failure recovery
+- Human approval
+
+The workflow becomes:
+
+Requirement
+↓
+Understand
+↓
+Retrieve Context
+↓
+Plan
+↓
+Implement
+↓
+Test
+↓
+Review
+↓
 Fix
-
-
-
 ↓
+Verify
+↓
+Report
 
+Outcome
 
+Madhav becomes capable of handling meaningful software engineering tasks with increasing autonomy.
 
-Retry
+The goal isn't an AI that writes code. It's an AI that understands the work.
 
-```
 
+PHASE 10 — MULTI-AGENT INTELLIGENCE
 
+Goal
 
-\---
+Introduce specialized agents once the single-agent foundation is reliable.
 
+Focus
 
+- Agent architecture
+- Specialized roles
+- Task delegation
+- Agent communication
+- Shared context
+- Agent memory
+- Planning
+- Orchestration
+- Verification
+- Failure handling
+- Human oversight
 
-\### Sprint 8.6 — Automated Testing
+Possible roles:
 
+Madhav
+|
+|-- Planner
+|-- Coding Agent
+|-- Testing Agent
+|-- Debugging Agent
+|-- Review Agent
 
+The agents are specialists.
 
-\* Unit tests
+Madhav remains the coordinating intelligence and continuity layer.
 
-\* Integration tests
+Outcome
 
-\* Validation
+Complex tasks can be divided among specialized agents while maintaining consistent context.
 
-\* Coverage
+Agents should add specialization, not unnecessary complexity.
 
-\* Reports
 
+PHASE 11 — PERSONAL AI OPERATING SYSTEM
 
+Goal
 
-\---
+Expand Madhav beyond software engineering into a broader personal AI system.
 
+Focus
 
+- Unified digital workspace
+- Voice interaction
+- Application interaction
+- Broader tool ecosystem
+- Personal workflows
+- Research
+- Knowledge work
+- Task management
+- Long-running processes
+- Cross-application context
+- Continuous assistance
 
-\### Sprint 8.7 — Self Refactoring
+The direction changes from:
 
+AI Software Engineer
 
+toward:
 
-\* Code quality
+Personal AI Operating Layer
 
-\* Duplicate removal
+The objective is not to replace the operating system overnight.
 
-\* Optimization
+The objective is to create an intelligent layer that can understand and operate across the user's digital environment.
 
-\* Maintainability
+Outcome
 
-\* Architecture improvements
+Madhav becomes a general-purpose personal AI capable of assisting with much more than software development.
 
+The assistant should disappear into the workflow, not become another workflow to manage.
 
 
-\---
+PHASE 12 — COLLABORATIVE & SCALABLE AI PLATFORM
 
+Goal
 
+Extend the personal system into a platform capable of supporting multiple users, teams, organizations, and larger AI ecosystems.
 
-\## Stage C — Deliver
+Focus
 
+- Multi-user architecture
+- Authentication
+- Authorization
+- User isolation
+- Cloud infrastructure
+- Synchronization
+- Collaboration
+- Shared knowledge
+- Team continuity
+- Agent ecosystems
+- Scalability
+- Reliability
+- Monitoring
+- SaaS architecture
 
+The progression is:
 
-\### Sprint 8.8 — Completion Verification
+Personal
+↓
+Multi-User
+↓
+Collaborative
+↓
+Cloud-Enabled
+↓
+Platform
 
+Local-first remains an important principle even as cloud capabilities are introduced.
 
+Cloud should extend Madhav's capabilities rather than replace its local foundation.
 
-\* Build verification
+Outcome
 
-\* Runtime verification
+Madhav becomes capable of supporting collaborative workflows and potentially evolving into a broader platform.
 
-\* Feature validation
+Scale should amplify a useful system, not compensate for a weak one.
 
-\* Final checks
 
+AFTER PHASE 12
 
+Phase 12 is not necessarily the end.
 
-\---
+It marks the point where Madhav has moved from a personal engineering project toward a mature AI platform.
 
+From there, the direction will depend on what actually works.
 
+Possible areas include:
 
-\### Sprint 8.9 — Machine Control
+- Advanced agent ecosystems
+- Business operations
+- Domain-specific AI specialists
+- Organization-wide continuity
+- Advanced voice interaction
+- Autonomous workflows
+- Continuous system improvement
+- New computing interfaces
+- AI-native applications
+- Broader digital operations
 
+These are possibilities, not promises.
 
+The roadmap should continue to evolve with technology and actual experience.
 
-User-approved control over:
 
+ROADMAP PRINCIPLES
 
+Build in the Right Order
 
-\* Files
+Do not build advanced capabilities on top of weak foundations.
 
-\* Folders
+Stability Before Expansion
 
-\* Terminal
+A phase should be stable enough to support the next phase before moving forward.
 
-\* Browser
+Continuity Over Features
 
-\* VS Code
+Features should strengthen Madhav's ability to understand and continue work.
 
-\* Docker
+Autonomy With Control
 
-\* Databases
+More capability should always be accompanied by appropriate permissions and safeguards.
 
-\* Package Managers
+Technology Is Replaceable
 
+Models, frameworks, databases, and runtimes will change.
 
+The architecture should make that change possible.
 
-\---
+Local First
 
+Local execution and ownership remain important even when cloud capabilities are eventually introduced.
 
+Don't Chase Trends
 
-\### Sprint 8.10 — Runtime \& Repository Management
+A popular AI feature does not automatically belong in Madhav.
 
+Every feature needs a reason to exist.
 
+Build for the Long Term
 
-\* Runtime Manager
+The system should become more useful as knowledge and context accumulate.
 
-\* Model Manager
 
-\* Git
+FEATURE PRIORITY
 
-\* GitHub
+Before adding a major feature, ask:
 
-\* Smart commits
+1. Does it solve a real problem?
+2. Does it improve understanding?
+3. Does it improve continuity?
+4. Does it improve useful autonomy?
+5. Does it improve trust?
+6. Does it strengthen the architecture?
+7. Will it remain valuable over time?
 
-\* Releases
+If the answer is mostly no, it should not be a priority.
 
-\* Tags
 
-\* Branches
+MEASURING PROGRESS
 
+Progress should not be measured only by completed features.
 
+A phase is meaningful when its capabilities are:
 
-\---
+- Working
+- Tested
+- Understandable
+- Modular
+- Documented
+- Reliable
+- Useful
 
+The objective is not to move through phases quickly.
 
+The objective is to make each phase strong enough that the next one becomes possible.
 
-\## Phase 8 Outcome
 
+THE EVOLUTION OF MADHAV
 
+Phase 1–4
+Engineering & AI Foundation
+↓
+Phase 5–6
+Madhav Core Architecture
+↓
+Phase 7
+Continuity Engine
+↓
+Phase 8
+Tool Ecosystem
+↓
+Phase 9
+Autonomous Software Engineer
+↓
+Phase 10
+Multi-Agent Intelligence
+↓
+Phase 11
+Personal AI Operating System
+↓
+Phase 12
+Collaborative AI Platform
 
-Users provide ideas.
+The central idea remains the same throughout every phase:
 
+Continuity first.
+Capability second.
+Autonomy third.
+Scale last.
 
 
-Madhav delivers working software.
+CURRENT STATUS
 
+Madhav is currently under active development.
 
+The project is being built from the foundation upward.
 
-\---
+The later phases describe the direction of the project, not capabilities that already exist.
 
+The roadmap is expected to change when engineering reality, new technology, or actual usage reveals a better path.
 
 
-\# Phase 9 — Multi-Agent Ecosystem
+FOUNDER RULE
 
+First create something. Then make it beautiful.
 
+Build the foundation.
 
-\## Objective
+Make it work.
 
+Understand what was built.
 
+Improve it.
 
-Allow multiple specialized AI agents to collaborate.
+Then expand.
 
+And only when the system has earned it:
 
+Scale.
 
-\---
 
+NORTH STAR
 
+Every major release should move Madhav closer to one simple experience:
 
-\## Sprint 9.1 — Agent Manager
+"I don't have to start over anymore."
 
-
-
-\* Agent lifecycle
-
-\* Agent registry
-
-\* Agent orchestration
-
-
-
-\---
-
-
-
-\## Sprint 9.2 — Specialized Agents
-
-
-
-\* Coding Agent
-
-\* Testing Agent
-
-\* Research Agent
-
-\* Documentation Agent
-
-\* DevOps Agent
-
-\* Planning Agent
-
-
-
-\---
-
-
-
-\## Sprint 9.3 — Task Distribution
-
-
-
-\* Task decomposition
-
-\* Assignment
-
-\* Scheduling
-
-\* Progress tracking
-
-
-
-\---
-
-
-
-\## Sprint 9.4 — Shared Context
-
-
-
-\* Shared memory
-
-\* Shared knowledge
-
-\* Shared reasoning
-
-\* Inter-agent messaging
-
-
-
-\---
-
-
-
-\## Sprint 9.5 — Parallel Execution
-
-
-
-\* Concurrent execution
-
-\* Result merging
-
-\* Conflict resolution
-
-\* Performance optimization
-
-
-
-\---
-
-
-
-\## Phase 9 Outcome
-
-
-
-Multiple AI specialists collaborate under Madhav's coordination.
-
-
-
-\---
-
-
-
-\# Phase 10 — Self Evolution \& Scale
-
-
-
-\## Objective
-
-
-
-Allow Madhav to improve continuously.
-
-
-
-\---
-
-
-
-\## Sprint 10.1 — Learning System
-
-
-
-\* Learn from projects
-
-\* Learn from feedback
-
-\* Learn from failures
-
-\* Improve future reasoning
-
-
-
-\---
-
-
-
-\## Sprint 10.2 — Personalized Behaviour
-
-
-
-\* Coding style
-
-\* Communication style
-
-\* Workflow adaptation
-
-\* Preference learning
-
-
-
-\---
-
-
-
-\## Sprint 10.3 — Adaptive Personality
-
-
-
-\* Behaviour modes
-
-\* Configurable interaction
-
-\* User profiles
-
-
-
-\---
-
-
-
-\## Sprint 10.4 — Performance Optimization
-
-
-
-\* Faster execution
-
-\* Better planning
-
-\* Smarter retrieval
-
-\* Resource optimization
-
-
-
-\---
-
-
-
-\## Sprint 10.5 — Enterprise Scaling
-
-
-
-\* Multiple workspaces
-
-\* Team collaboration
-
-\* Shared knowledge
-
-\* Organization support
-
-
-
-\---
-
-
-
-\## Sprint 10.6 — API Ecosystem
-
-
-
-\* Public APIs
-
-\* SDK
-
-\* External integrations
-
-\* Developer platform
-
-
-
-\---
-
-
-
-\## Sprint 10.7 — Plugin Marketplace
-
-
-
-\* Plugin SDK
-
-\* Plugin installation
-
-\* Community ecosystem
-
-\* Extension platform
-
-
-
-\---
-
-
-
-\## Sprint 10.8 — Long-Running Intelligence
-
-
-
-\* Continuous monitoring
-
-\* Autonomous workflows
-
-\* Background reasoning
-
-\* Long-term project supervision
-
-
-
-\---
-
-
-
-\## Phase 10 Outcome
-
-
-
-Madhav evolves into a continuously improving AI Operating System capable of assisting individuals and teams over long periods.
-
-
-
-\---
-
-
-
-\# Long-Term Mission
-
-
-
-Madhav is being built to ensure that:
-
-
-
-\* Knowledge never becomes fragmented.
-
-\* Projects never lose continuity.
-
-\* Decisions remain explainable.
-
-\* Goals remain visible.
-
-\* Progress is preserved.
-
-\* Learning compounds over time.
-
-\* Repetitive work is gradually automated.
-
-\* Users remain in control of autonomous actions.
-
-
-
-The end goal is not to create another intelligent assistant.
-
-
-
-The end goal is to build an AI Operating System that continuously grows alongside its user, preserves the continuity of their work, and gradually becomes a trustworthy autonomous partner.
-
-
-
+If each phase makes that statement more true than the last, the roadmap is working.
