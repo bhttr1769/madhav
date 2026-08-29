@@ -203,47 +203,43 @@ I'm intentionally focusing on the foundation before worrying about making the sy
 
 ---
 
-# Roadmap
+# Roadmap overveiw
 
-## Phase 1 — Programming Foundation
-
-Build the programming and problem-solving foundation required for Madhav.
-
-## Phase 2 — Backend Engineering
-
-Build the backend engineering foundation and architecture required by the system.
-
-## Phase 3 — Advanced Backend Engineering
-
-Move into scalable architecture, distributed systems, DevOps, and more advanced engineering concepts.
-
-## Phase 4 — AI Engineering
-
-Learn and implement the practical foundations of LLMs, embeddings, RAG, agents, and AI system design.
-
-## Phase 5 — Product & System Foundations
-
-Bring the engineering and AI foundations together into a coherent Madhav architecture.
-
-## Phase 6 — Madhav Core
-
-Build the core assistant, memory, context, tools, actions, and safety infrastructure.
-
-## Phase 7 — Knowledge & Context Engine
-
-Build document processing, chunking, embeddings, semantic retrieval, RAG, and contextual knowledge.
-
-## Phase 8 — Tool Ecosystem
-
-Expand Madhav's ability to interact with files, terminals, Git, development environments, and other tools.
-
-## Phase 9 — Multi-Agent Intelligence
-
-Introduce specialized agents and orchestration for handling more complex workflows.
-
-## Phase 10 — Autonomous AI Software Engineer
-
-Work toward an AI capable of planning, coding, testing, debugging, reviewing, and maintaining software with appropriate human oversight.
+Phase 1
+Programming Foundation
+        ↓
+Phase 2
+Backend Engineering
+        ↓
+Phase 3
+Advanced Backend Engineering
+        ↓
+Phase 4
+AI Engineering
+        ↓
+Phase 5
+Madhav Architecture
+        ↓
+Phase 6
+Madhav Core
+        ↓
+Phase 7
+Knowledge & Continuity Engine
+        ↓
+Phase 8
+Tool Ecosystem
+        ↓
+Phase 9
+Autonomous Software Engineer
+        ↓
+Phase 10
+Multi-Agent Intelligence
+        ↓
+Phase 11
+Personal AI Operating System
+        ↓
+Phase 12
+Collaborative & Scalable AI Platform
 
 For the detailed roadmap and milestones, see [ROADMAP.md](ROADMAP.md).
 
