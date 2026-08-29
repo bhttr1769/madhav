@@ -1,195 +1,457 @@
 # Madhav
-
-> **A Local-First AI Operating System**
+> **A Local-First AI Software Engineering System**
+> Madhav is a personal project I'm building around one simple idea:
 >
-> Built around two ideas:
->
-> **Continuity** — Nothing important should ever be forgotten.
-> **Autonomicity** — The AI should gradually learn to handle meaningful work on your behalf while keeping you in control.
+> **Continuity.**
+>An AI shouldn't have to forget everything every time a conversation ends.
 
 ---
 
-# Why I'm Building Madhav
+## Why I'm Building Madhav
 
-AI has become incredibly good at answering questions.
+I've been using AI for development for a while, and I kept running into the same problem.
 
-But after every conversation, most AI systems start over.
+An AI can help me write code, explain something, debug an error, or plan a feature. But once the conversation ends, a lot of the context disappears.
 
-They don't remember why a decision was made.
+It doesn't really know:
 
-They don't understand how a project has evolved.
+- What I've already built
+- Why I made certain decisions
+- What I tried before
+- What failed
+- What I'm currently working on
+- Where I left off
+- What I was planning to do next
 
-They don't know what you've already learned, what you're trying to achieve, or what still needs to be done.
+The information usually exists somewhere. The problem is connecting it all together.
 
-Every day we rebuild the same context.
+That's what led me to Madhav.
 
-We reopen the same documents.
+I don't want to build another chatbot.
 
-We search for the same notes.
-
-We explain the same projects again and again.
-
-That isn't an intelligence problem.
-
-It's a continuity problem.
-
-Madhav is my attempt to solve it.
+I want to build an AI that can **understand the work I'm doing and stay with the project as it evolves.**
 
 ---
 
-# What is Madhav?
+## What is Madhav?
 
-Madhav is a **Local-First AI Operating System**.
+Madhav is a **local-first AI software engineering system** that I'm building from the ground up.
 
-Instead of being another chatbot or coding assistant, it acts as an intelligent operating layer across your work.
+The current goal is to create an AI that can understand software projects, work with their knowledge and context, use development tools, and gradually take on more complex engineering tasks.
 
-Its job is to understand what you're building, preserve context over time, and help you move forward without constantly starting from zero.
+The system is being built in layers instead of trying to make everything autonomous from the beginning.
 
-The longer you use Madhav, the more useful it becomes.
+Some of the major parts include:
+
+- Persistent memory
+- Knowledge management
+- Embeddings
+- Semantic search
+- RAG
+- Context management
+- Tool execution
+- AI model abstraction
+- Safety and permissions
+- Agent orchestration
+
+The final system will be much larger than what exists today.
+
+For now, I'm focused on getting the foundation right.
 
 ---
 
-# The Two Core Principles
+# The Idea Behind Madhav
 
 ## Continuity
 
-Knowledge should accumulate, not reset.
+The main idea is simple:
 
-Madhav is designed to preserve:
+> **Knowledge should accumulate instead of resetting.**
 
-* Projects
-* Knowledge
-* Decisions
-* Goals
-* Progress
-* Research
-* Workflows
-* Learning
+A long-running project creates a huge amount of context.
 
-Nothing important should disappear between sessions.
+Madhav is designed to eventually preserve things like:
 
----
+- Projects
+- Decisions
+- Research
+- Goals
+- Progress
+- Documentation
+- Experiments
+- Learning
+- Workflows
 
-## Autonomicity
-
-As Madhav understands more about your work, it should gradually take on more responsibility.
-
-Not by taking control away from you—
-
-but by reducing repetitive work while keeping every important action transparent and user-approved.
-
-The goal is not blind automation.
-
-The goal is trustworthy autonomy.
+The goal is that when I come back to a project after days, weeks, or months, Madhav can understand where things stand without me having to explain everything again.
 
 ---
 
-# The Philosophy Behind Madhav
+## Autonomy
 
-Every new feature must answer three questions:
+Continuity is only one part of the idea.
 
-1. What real user problem does this solve?
-2. Does it improve continuity or autonomicity?
-3. Will this become more valuable after months or years of use?
+Once an AI understands enough about a project, it should be able to do more than answer questions.
 
-If the answer is no, it probably doesn't belong in Madhav.
+The direction I'm taking is:
 
-Features are not the product.
+Understand
+    ↓
+Plan
+    ↓
+Act
+    ↓
+Verify
+    ↓
+Learn
 
-The experience is.
+But autonomy doesn't mean giving an AI unrestricted access to everything.
+
+As Madhav becomes capable of performing actions, those actions need to be controlled through validation, risk assessment, and permissions.
+
+The goal is **useful autonomy without losing control.**
+
+---
+
+# How Madhav is Being Built
+
+I'm building Madhav incrementally.
+
+Instead of starting with a huge autonomous system, I'm first building the individual pieces that such a system would actually need.
+
+At a high level:
+
+`
+                         MADHAV
+                            │
+              ┌─────────────┴─────────────┐
+              │                           │
+        Intelligence                 Continuity
+              │                           │
+              │                    ┌──────┴──────┐
+              │                    │             │
+              │                  Memory       Knowledge
+              │                                  │
+              │                             Embeddings
+              │                                  │
+              │                                  RAG
+              │
+              └──────────────┬───────────────────┘
+                             │
+                       Context Engine
+                             │
+                   ┌─────────┴─────────┐
+                   │                   │
+                 Tools               Agents
+                   │                   │
+                   └─────────┬─────────┘
+                             │
+                        Safety Layer
+                             │
+                  Action → Risk → Permission
+                             │
+                             ▼
+                           User
+
+
+The architecture is deliberately modular.
+
+I don't want Madhav to be permanently tied to a particular AI model, runtime, or service.
+
+For example, Ollama is currently being used for local model execution, but it is not supposed to become a hard dependency of the entire system.
 
 ---
 
 # Core Principles
 
-* Local First
-* Privacy by Default
-* Continuity over Conversation
-* Autonomicity with User Control
-* Explainable Decisions
-* Runtime Independence
-* Long-Term Thinking
-* Modular Architecture
-* Safe Automation
+### Local First
+
+Madhav is being built with local execution and local data ownership as important design goals.
+
+### Continuity Over Conversation
+
+The system should understand long-running work, not just individual prompts.
+
+### User Control
+
+Madhav should help make decisions and perform work, but the user remains in control of important actions.
+
+### Runtime Independence
+
+The architecture should allow different models and AI runtimes to be used in the future.
+
+### Modular Architecture
+
+Different parts of the system should be replaceable without rebuilding everything.
+
+### Safe Automation
+
+The more capable Madhav becomes, the more important it becomes to control what it is allowed to do.
+
+### Long-Term Thinking
+
+I'm building this as something that should become more useful after months and years of use, not just something that looks impressive in a demo.
 
 ---
 
-## Product Overview
+# Current Development
 
-Madhav is built as a layered system.
+Madhav is currently being developed through a **10-phase roadmap**.
 
-At the highest level, it consists of:
+The purpose of these phases is to build the system progressively, from engineering fundamentals to an autonomous AI software engineer.
 
-* **AI Operating System** – The user-facing product.
-* **Continuity Engine** – Preserves knowledge, projects, decisions, goals, and context over time.
-* **Intelligence Layer** – Understands projects, knowledge, workflows, and user intent.
-* **Capability Layer** – Provides the underlying tools such as memory, RAG, planning, automation, local LLMs, runtime management, Git integration, plugins, and machine control.
-
-This layered design keeps the product modular, scalable, and runtime-independent.
-
-For the complete system design, see **ARCHITECTURE.md**.
+I'm intentionally focusing on the foundation before worrying about making the system beautiful or turning it into a product.
 
 ---
 
 # Roadmap
 
-## Phase 1 — Foundation
+## Phase 1 — Programming Foundation
 
-## Phase 2 — Memory & Personalization
+Build the programming and problem-solving foundation required for Madhav.
 
-## Phase 3 — Actions & Automation
+## Phase 2 — Backend Engineering
 
-## Phase 4 — Planning & Execution
+Build the backend engineering foundation and architecture required by the system.
 
-## Phase 5 — AI Software Engineering
+## Phase 3 — Advanced Backend Engineering
 
-## Phase 6 — Developer Experience
+Move into scalable architecture, distributed systems, DevOps, and more advanced engineering concepts.
 
-## Phase 7 — Knowledge & Continuity Engine
+## Phase 4 — AI Engineering
 
-## Phase 8 — Autonomous Software Engineer
+Learn and implement the practical foundations of LLMs, embeddings, RAG, agents, and AI system design.
 
-## Phase 9 — Multi-Agent Ecosystem
+## Phase 5 — Product & System Foundations
 
-## Phase 10 — Self Evolution & Scale
+Bring the engineering and AI foundations together into a coherent Madhav architecture.
 
-For the complete roadmap and milestone breakdown, see ROADMAP.md.
+## Phase 6 — Madhav Core
+
+Build the core assistant, memory, context, tools, actions, and safety infrastructure.
+
+## Phase 7 — Knowledge & Context Engine
+
+Build document processing, chunking, embeddings, semantic retrieval, RAG, and contextual knowledge.
+
+## Phase 8 — Tool Ecosystem
+
+Expand Madhav's ability to interact with files, terminals, Git, development environments, and other tools.
+
+## Phase 9 — Multi-Agent Intelligence
+
+Introduce specialized agents and orchestration for handling more complex workflows.
+
+## Phase 10 — Autonomous AI Software Engineer
+
+Work toward an AI capable of planning, coding, testing, debugging, reviewing, and maintaining software with appropriate human oversight.
+
+For the detailed roadmap and milestones, see [ROADMAP.md](ROADMAP.md).
 
 ---
 
 # Technology
 
-Current development stack:
+The project currently uses:
 
 * Python
 * Ollama
-* Qwen models
-* Git & GitHub
+* Local LLMs
+* Embedding models
+* Vector-based retrieval
+* Git
+* GitHub
 
-The architecture is runtime-independent, allowing different AI models and runtimes to be integrated in the future.
+The exact technology stack will continue to evolve as the project develops.
+
+One thing I want to keep stable is the architecture around those technologies.
+
+Madhav should be able to change models or runtimes without having its entire architecture tied to them.
+
+---
+
+# Knowledge & Retrieval
+
+One of the important parts of Madhav is its ability to work with knowledge outside the model itself.
+
+The basic idea is:
+
+
+Documents / Project Knowledge
+            ↓
+        Processing
+            ↓
+        Embeddings
+            ↓
+      Semantic Search
+            ↓
+     Relevant Context
+            ↓
+           LLM
+
+
+This allows Madhav to retrieve information based on meaning rather than relying only on exact keyword matches.
+
+This becomes especially important once the amount of project knowledge starts becoming large.
+
+---
+
+# Memory
+
+Memory and knowledge retrieval are not exactly the same thing.
+
+**Memory** is about information Madhav should retain across interactions.
+
+**Retrieval** is about finding the relevant information when it is needed.
+
+Together, they form an important part of the continuity system.
+
+The long-term goal is not to remember everything blindly.
+
+It is to remember the **right things** and retrieve the **right context** when it matters.
+
+---
+
+# Tools & Actions
+
+A useful engineering assistant eventually needs to do more than generate text.
+
+It needs to interact with the environment it is working in.
+
+That means Madhav is being designed around tools and structured actions.
+
+For example:
+
+
+Madhav
+   ↓
+Decides what needs to be done
+   ↓
+Creates an action
+   ↓
+Action is validated
+   ↓
+Risk is evaluated
+   ↓
+Permission is checked
+   ↓
+Tool executes the action
+
+
+This becomes increasingly important as Madhav moves toward autonomous software engineering.
+
+---
+
+# Safety
+
+Giving an AI more capabilities also gives its mistakes more consequences.
+
+Because of that, safety isn't something I want to add at the very end.
+
+Madhav is being designed around the idea that actions should pass through:
+
+
+Action
+   ↓
+Validation
+   ↓
+Risk Assessment
+   ↓
+Permission
+   ↓
+Execution
+
+The goal is not to prevent Madhav from doing useful things.
+
+The goal is to make sure it knows **what it is allowed to do**.
+
+---
+
+# Long-Term Vision
+
+The ten phases are the foundation.
+
+After completing them, I want to use Madhav personally for a long period and see how far the system can actually go.
+
+The longer-term vision is to evolve Madhav into something closer to a personal **AI operating layer** for digital work.
+
+It could eventually:
+
+* Understand long-running projects
+* Act as an engineering partner
+* Work with development tools
+* Execute complex workflows
+* Perform research
+* Coordinate specialized agents
+* Manage long-running tasks
+* Interact through voice
+* Assist with different areas of digital work
+
+Further down the road, Madhav could potentially coordinate a group of specialized AI agents, almost like a small digital organization.
+
+That is the direction.
+
+It is not the current scope.
+
+Right now, I'm building the foundation.
+
+---
+
+# Why Local First?
+
+Madhav is intended to work with personal projects, files, code, knowledge, and long-term context.
+
+That makes privacy and ownership important.
+
+Local-first doesn't mean that every future component must always run locally.
+
+It means the system should have a strong local foundation and shouldn't be completely dependent on a cloud provider or a single AI company.
+
+---
+
+# Philosophy
+
+There is a simple rule I'm following while building this:
+
+> **First create something. Then make it beautiful.**
+
+Right now, I'm more interested in whether Madhav actually works than whether it looks impressive.
+
+The interface can be improved later.
+
+The architecture can evolve.
+
+The product can be packaged later.
+
+First I want to build something real.
+
+---
+
+# Current Status
+
+Madhav is an active personal development project.
+
+The system is still under construction, and many of the long-term capabilities described above do not exist yet.
+
+I'm deliberately documenting the project as it develops rather than presenting the final vision as if it already exists.
+
+The current priority is completing the foundation and learning from every stage of the process.
 
 ---
 
 # Long-Term Mission
 
-The goal isn't to build another AI assistant.
+I don't want Madhav to simply become another AI chatbot.
 
-The goal is to build a system that grows alongside its user.
+I want to build something that grows alongside its user.
 
-A system that remembers.
+Something that remembers.
 
-A system that understands.
+Something that understands.
 
-A system that can gradually take on more responsibility without taking away control.
+Something that can gradually take on more responsibility.
 
-If successful, Madhav won't just answer questions.
+And something that helps a person do more without taking away their control.
 
-It will help preserve the continuity of your work and become a reliable partner in building, learning, and creating over the long term.
-
----
-
-# License
-
-This project is currently under active development.
-
-The license will be finalized before the first public release.
+> **The greatest technology doesn't replace human potential.**
+>
+> **It preserves it.**
