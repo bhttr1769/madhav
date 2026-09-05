@@ -1,3 +1,4 @@
+
 import json
 
 import pytest
@@ -29,6 +30,7 @@ def valid_response():
             },
         ],
         "decision": {
+            "implementation_required": True,
             "necessity": (
                 "A new implementation is required "
                 "to satisfy the health endpoint task."
@@ -84,6 +86,7 @@ def test_parser_preserves_engineering_decision():
     )
 
     assert result.decision == EngineeringDecision(
+        implementation_required=True,
         necessity=(
             "A new implementation is required "
             "to satisfy the health endpoint task."
@@ -312,6 +315,7 @@ def test_parser_rejects_empty_delete_content():
             json.dumps(data),
         )
 
+
 def test_parser_rejects_non_object_decision():
 
     data = json.loads(
@@ -372,13 +376,27 @@ def test_parser_rejects_empty_necessity():
         )
 
 
-def test_parser_rejects_non_boolean_decision_field():
+@pytest.mark.parametrize(
+    "field",
+    [
+        "implementation_required",
+        "reuse_existing",
+        "use_standard_library",
+        "use_existing_dependency",
+        "new_dependency_required",
+        "abstraction_justified",
+        "optimization_justified",
+    ],
+)
+def test_parser_rejects_non_boolean_decision_field(
+    field,
+):
 
     data = json.loads(
         valid_response(),
     )
 
-    data["decision"]["optimization_justified"] = "true"
+    data["decision"][field] = "true"
 
     with pytest.raises(TypeError):
 

@@ -20,6 +20,7 @@ def test_generation_result_preserves_values():
     )
 
     decision = EngineeringDecision(
+        implementation_required=True,
         necessity="New implementation is required.",
         reuse_existing=False,
         use_standard_library=True,
@@ -45,6 +46,7 @@ def test_generation_result_preserves_values():
 def test_generation_result_supports_no_code_changes():
 
     decision = EngineeringDecision(
+        implementation_required=False,
         necessity="No new code is required.",
         reuse_existing=True,
         use_standard_library=False,
@@ -70,6 +72,7 @@ def test_generation_result_supports_no_code_changes():
 def test_generation_result_is_immutable():
 
     decision = EngineeringDecision(
+        implementation_required=True,
         necessity="Implementation is required.",
         reuse_existing=False,
         use_standard_library=False,
@@ -98,6 +101,7 @@ def test_generation_result_is_immutable():
 def test_generation_result_is_dataclass():
 
     decision = EngineeringDecision(
+        implementation_required=True,
         necessity="Implementation is required.",
         reuse_existing=False,
         use_standard_library=False,

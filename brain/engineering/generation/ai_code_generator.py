@@ -1,3 +1,4 @@
+
 import json
 
 from brain.engineering.generation.code_generator import (
@@ -24,9 +25,10 @@ from brain.engineering.generation.generation_response_parser import (
     GenerationResponseParser,
 )
 
+
 class AICodeGenerator(CodeGenerator):
     """
-    Uses the AI runtime to generate implementation changes
+    Uses the AI runtime to generate candidate implementation changes
     from a structured engineering generation request.
     """
 
@@ -85,10 +87,15 @@ class AICodeGenerator(CodeGenerator):
         return f"""
 You are a senior software engineer.
 
-Generate the implementation required for the supplied engineering task.
+Generate candidate implementation changes for the supplied engineering task.
 
-The implementation must follow the supplied system design and engineering
-plan. Generate only the code changes necessary to satisfy the task.
+The candidate implementation must follow the supplied system design and
+engineering plan. Generate only the code changes necessary to satisfy the
+task.
+
+The engineering decision returned in this response is candidate-generation
+metadata only. It is not the authoritative engineering decision. A separate
+engineering analysis determines the authoritative implementation decision.
 
 Return ONLY valid JSON.
 Do not use markdown.
@@ -105,6 +112,7 @@ The JSON must contain exactly these fields:
     }}
   ],
   "decision": {{
+    "implementation_required": true,
     "necessity": "string",
     "reuse_existing": false,
     "use_standard_library": false,
@@ -132,11 +140,15 @@ Rules:
   that they should be reused.
 - Do not perform speculative optimization.
 - Do not introduce unnecessary abstractions.
-- The engineering decision must explain why implementation is or is not
-  necessary and how reuse, dependencies, abstraction, and optimization were
-  considered.
+- The candidate engineering decision must explain why implementation is or is
+  not necessary and how reuse, dependencies, abstraction, and optimization
+  were considered.
 - Do not assume a specific programming language unless the supplied
   engineering context establishes one.
+- implementation_required must be a direct boolean judgment about whether
+  new implementation work is required.
+- Do not infer implementation_required from the wording of necessity.
+- Do not treat the candidate engineering decision as authoritative.
 
 Engineering task:
 

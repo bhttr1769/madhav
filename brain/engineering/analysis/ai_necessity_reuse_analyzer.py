@@ -90,6 +90,7 @@ Do not include explanations outside the JSON.
 The JSON must contain exactly these fields:
 
 {{
+  "implementation_required": true,
   "necessity": "string",
   "reuse_existing": false,
   "use_standard_library": false,
@@ -112,6 +113,9 @@ Rules:
 - Do not invent capabilities that are not present in the supplied context.
 - Base reuse analysis on the supplied existing-code structure.
 - Keep the rationale specific to the supplied engineering context.
+- Set implementation_required to true only when new implementation work is actually required.
+- Set implementation_required to false when existing capabilities already satisfy the task and no new implementation is necessary.
+- implementation_required must be a direct engineering judgment and must not be inferred later from the necessity text.
 
 Engineering task:
 
@@ -256,6 +260,7 @@ Calls:
             )
 
         decision_fields = {
+            "implementation_required",
             "necessity",
             "reuse_existing",
             "use_standard_library",
@@ -287,6 +292,7 @@ Calls:
             )
 
         boolean_fields = (
+            "implementation_required",
             "reuse_existing",
             "use_standard_library",
             "use_existing_dependency",
@@ -335,6 +341,7 @@ Calls:
             )
 
         return EngineeringDecision(
+            implementation_required=data["implementation_required"],
             necessity=necessity,
             reuse_existing=data[
                 "reuse_existing"

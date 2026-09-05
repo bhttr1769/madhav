@@ -6,6 +6,7 @@ from brain.engineering.generation.models.engineering_decision import (
 def test_engineering_decision_preserves_values():
 
     decision = EngineeringDecision(
+        implementation_required=True,
         necessity="New implementation is required.",
         reuse_existing=False,
         use_standard_library=True,
@@ -17,6 +18,8 @@ def test_engineering_decision_preserves_values():
             "The standard library provides the required functionality.",
         ),
     )
+
+    assert decision.implementation_required is True
 
     assert decision.necessity == (
         "New implementation is required."
@@ -42,6 +45,7 @@ def test_engineering_decision_preserves_values():
 def test_engineering_decision_supports_no_new_code():
 
     decision = EngineeringDecision(
+        implementation_required=False,
         necessity="No new code is required.",
         reuse_existing=True,
         use_standard_library=False,
@@ -53,6 +57,8 @@ def test_engineering_decision_supports_no_new_code():
             "An existing capability already satisfies the requirement.",
         ),
     )
+
+    assert decision.implementation_required is False
 
     assert decision.necessity == (
         "No new code is required."
@@ -68,6 +74,7 @@ def test_engineering_decision_supports_no_new_code():
 def test_engineering_decision_is_immutable():
 
     decision = EngineeringDecision(
+        implementation_required=True,
         necessity="Implementation is required.",
         reuse_existing=False,
         use_standard_library=False,
@@ -93,6 +100,7 @@ def test_engineering_decision_is_immutable():
 def test_engineering_decision_is_dataclass():
 
     decision = EngineeringDecision(
+        implementation_required=True,
         necessity="Implementation is required.",
         reuse_existing=False,
         use_standard_library=False,

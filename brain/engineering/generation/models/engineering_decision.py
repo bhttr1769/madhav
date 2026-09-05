@@ -7,6 +7,8 @@ class EngineeringDecision:
     Represents the engineering judgment behind a proposed implementation.
     """
 
+    implementation_required: bool
+
     necessity: str
 
     reuse_existing: bool

@@ -208,6 +208,7 @@ def valid_response() -> str:
             },
         ],
         "decision": {
+            "implementation_required": True,
             "necessity": "Implementation is required to satisfy the task.",
             "reuse_existing": True,
             "use_standard_library": True,
@@ -363,6 +364,7 @@ def test_generator_preserves_decision():
     )
 
     assert result.decision == EngineeringDecision(
+        implementation_required=True,
         necessity="Implementation is required to satisfy the task.",
         reuse_existing=True,
         use_standard_library=True,
@@ -651,6 +653,7 @@ def test_generator_rejects_empty_necessity():
 @pytest.mark.parametrize(
     "field",
     [
+        "implementation_required",
         "reuse_existing",
         "use_standard_library",
         "use_existing_dependency",
@@ -785,6 +788,7 @@ def test_generator_preserves_false_decision_flags():
     )
 
     response["decision"] = {
+        "implementation_required": False,
         "necessity": "No implementation is required.",
         "reuse_existing": False,
         "use_standard_library": False,
@@ -806,6 +810,7 @@ def test_generator_preserves_false_decision_flags():
     )
 
     assert result.decision == EngineeringDecision(
+        implementation_required=False,
         necessity="No implementation is required.",
         reuse_existing=False,
         use_standard_library=False,
@@ -817,6 +822,7 @@ def test_generator_preserves_false_decision_flags():
             "The existing implementation already satisfies the task.",
         ),
     )
+
 
 def test_generator_accepts_create_operation():
 

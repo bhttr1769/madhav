@@ -1,3 +1,4 @@
+
 import json
 
 import pytest
@@ -43,6 +44,7 @@ def make_request(
 def valid_response():
     return json.dumps({
         "necessity": "Implementation is required.",
+        "implementation_required": True,
         "reuse_existing": True,
         "use_standard_library": True,
         "use_existing_dependency": False,
@@ -213,6 +215,7 @@ def test_analyzer_returns_engineering_decision(
         result,
         EngineeringDecision,
     )
+    assert result.implementation_required is True
 
 
 def test_analyzer_preserves_decision_values(
@@ -224,6 +227,7 @@ def test_analyzer_preserves_decision_values(
 
     response = json.dumps({
         "necessity": "Existing capability is sufficient.",
+        "implementation_required": True,
         "reuse_existing": True,
         "use_standard_library": False,
         "use_existing_dependency": True,
@@ -249,6 +253,7 @@ def test_analyzer_preserves_decision_values(
 
     result = analyzer.analyze(request)
 
+    assert result.implementation_required is True
     assert result.necessity == (
         "Existing capability is sufficient."
     )
@@ -348,6 +353,7 @@ def test_analyzer_rejects_invalid_schema(
 @pytest.mark.parametrize(
     "field",
     [
+        "implementation_required",
         "reuse_existing",
         "use_standard_library",
         "use_existing_dependency",
@@ -385,7 +391,7 @@ def test_analyzer_rejects_non_boolean_decision_fields(
 
     with pytest.raises(
         TypeError,
-        match=f"{field} must be a boolean",
+        match=f"decision {field} must be a boolean",
     ):
         analyzer.analyze(request)
 
@@ -418,7 +424,7 @@ def test_analyzer_rejects_empty_necessity(
 
     with pytest.raises(
         ValueError,
-        match="necessity must not be empty",
+        match="decision necessity must not be empty",
     ):
         analyzer.analyze(request)
 
@@ -451,7 +457,7 @@ def test_analyzer_rejects_non_list_rationale(
 
     with pytest.raises(
         TypeError,
-        match="rationale must be a list",
+        match="decision rationale must be a list",
     ):
         analyzer.analyze(request)
 
@@ -487,6 +493,6 @@ def test_analyzer_rejects_empty_rationale_items(
 
     with pytest.raises(
         ValueError,
-        match="rationale must not contain empty strings",
+        match="decision rationale must not contain empty strings",
     ):
         analyzer.analyze(request)

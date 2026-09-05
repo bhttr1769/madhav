@@ -13,6 +13,7 @@ from brain.engineering.generation.models.engineering_decision import (
 
 def _decision():
     return EngineeringDecision(
+        implementation_required=True,
         necessity="existing capability is insufficient",
         reuse_existing=True,
         use_standard_library=True,

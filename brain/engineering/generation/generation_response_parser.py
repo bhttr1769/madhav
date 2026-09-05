@@ -1,3 +1,4 @@
+
 import json
 
 from brain.engineering.generation.models.code_change import (
@@ -207,6 +208,7 @@ class GenerationResponseParser:
             )
 
         decision_fields = {
+            "implementation_required",
             "necessity",
             "reuse_existing",
             "use_standard_library",
@@ -236,6 +238,7 @@ class GenerationResponseParser:
             )
 
         boolean_fields = (
+            "implementation_required",
             "reuse_existing",
             "use_standard_library",
             "use_existing_dependency",
@@ -281,6 +284,9 @@ class GenerationResponseParser:
             )
 
         return EngineeringDecision(
+            implementation_required=raw_decision[
+                "implementation_required"
+            ],
             necessity=raw_decision["necessity"],
             reuse_existing=raw_decision[
                 "reuse_existing"
