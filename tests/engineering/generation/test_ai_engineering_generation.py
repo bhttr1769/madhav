@@ -644,18 +644,21 @@ def test_necessity_request_contains_complete_context():
 
 def test_candidate_generation_receives_generation_request():
 
-    generation, _, candidate, *_ = create_generation()
+    generation, necessity, candidate, *_ = create_generation()
+
+    engineering_request = request()
 
     generation.generate(
-        request(),
+        engineering_request,
     )
 
     assert candidate.last_request == GenerationRequest(
         task=task(),
         design=design(),
         plan=plan(),
+        existing_code=engineering_request.existing_code,
+        engineering_decision=necessity.decision,
     )
-
 
 def test_quality_analysis_receives_authoritative_decision():
 

@@ -42,6 +42,10 @@ from brain.engineering.tasks.models.task import (
     Task,
 )
 
+from brain.code.models.code_structure import (
+    CodeStructure,
+)
+
 
 class FakeChatService:
 
@@ -152,13 +156,44 @@ def plan() -> EngineeringPlan:
         confidence=0.9,
     )
 
+def existing_code() -> CodeStructure:
+
+    return CodeStructure(
+        modules=frozenset(),
+        classes=frozenset(),
+        functions=frozenset(),
+        imports=frozenset(),
+        calls=frozenset(),
+    )
+
+
+def engineering_decision() -> EngineeringDecision:
+
+    return EngineeringDecision(
+        implementation_required=True,
+        necessity=(
+            "A new implementation is required "
+            "to satisfy the health endpoint task."
+        ),
+        reuse_existing=True,
+        use_standard_library=True,
+        use_existing_dependency=False,
+        new_dependency_required=False,
+        abstraction_justified=False,
+        optimization_justified=False,
+        rationale=(
+            "The existing backend should be reused.",
+            "No new dependency is required.",
+        ),
+    )
 
 def generation_request() -> GenerationRequest:
-
     return GenerationRequest(
         task=task(),
         design=design(),
         plan=plan(),
+        existing_code=existing_code(),
+        engineering_decision=engineering_decision(),
     )
 
 
