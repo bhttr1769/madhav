@@ -176,6 +176,7 @@ def valid_response() -> str:
             },
         ],
         "decision": {
+            "implementation_required": True,
             "necessity": (
                 "A new implementation is required "
                 "to satisfy the health endpoint task."
@@ -255,6 +256,7 @@ def test_generation_pipeline_preserves_engineering_decision():
     )
 
     assert result.decision == EngineeringDecision(
+        implementation_required=True,
         necessity=(
             "A new implementation is required "
             "to satisfy the health endpoint task."

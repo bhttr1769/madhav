@@ -206,6 +206,7 @@ def request() -> EngineeringGenerationRequest:
 def engineering_decision() -> EngineeringDecision:
 
     return EngineeringDecision(
+        implementation_required=True,
         necessity="Implementation is required.",
         reuse_existing=True,
         use_standard_library=True,
@@ -222,6 +223,7 @@ def engineering_decision() -> EngineeringDecision:
 def candidate_decision() -> EngineeringDecision:
 
     return EngineeringDecision(
+        implementation_required=True,
         necessity="Candidate decision.",
         reuse_existing=False,
         use_standard_library=False,
@@ -485,6 +487,70 @@ def create_generation():
         events,
     )
 
+def create_noop_generation():
+
+    events = []
+
+    necessity = FakeNecessityReuseAnalyzer(
+        EngineeringDecision(
+            implementation_required=False,
+            necessity="No implementation is required.",
+            reuse_existing=True,
+            use_standard_library=False,
+            use_existing_dependency=False,
+            new_dependency_required=False,
+            abstraction_justified=False,
+            optimization_justified=False,
+            rationale=(
+                "An existing capability already satisfies the requirement.",
+            ),
+        ),
+        events,
+    )
+
+    candidate = FakeCodeGenerator(
+        GenerationResult(
+            changes=changes(),
+            decision=candidate_decision(),
+        ),
+        events,
+    )
+
+    quality = FakeComplexityQualityAnalyzer(
+        quality_assessment(),
+        events,
+    )
+
+    optimization = FakeOptimizationDecisionAnalyzer(
+        optimization_decision(),
+        events,
+    )
+
+    final = FakeFinalCodeGenerator(
+        GenerationResult(
+            changes=changes(),
+            decision=candidate_decision(),
+        ),
+        events,
+    )
+
+    generation = AIEngineeringGeneration(
+        necessity_reuse_analyzer=necessity,
+        code_generator=candidate,
+        complexity_quality_analyzer=quality,
+        optimization_decision_analyzer=optimization,
+        final_code_generator=final,
+    )
+
+    return (
+        generation,
+        necessity,
+        candidate,
+        quality,
+        optimization,
+        final,
+        events,
+    )
 
 def test_engineering_generation_produces_result():
 
@@ -892,3 +958,60 @@ def test_engineering_generation_requires_final_generator():
             ),
             final_code_generator=object(),
         )
+        
+def test_engineering_generation_skips_implementation_when_not_required():
+
+    generation, *_ = create_noop_generation()
+
+    result = generation.generate(
+        request(),
+    )
+
+    assert result.changes == ()
+
+
+def test_engineering_generation_skips_all_downstream_stages_when_not_required():
+
+    generation, _, candidate, quality, optimization, final, events = (
+        create_noop_generation()
+    )
+
+    generation.generate(
+        request(),
+    )
+
+    assert events == [
+        "necessity",
+    ]
+
+    assert candidate.last_request is None
+    assert quality.last_request is None
+    assert optimization.last_request is None
+    assert final.last_request is None
+
+
+def test_engineering_generation_returns_authoritative_noop_decision():
+
+    generation, necessity, *_ = create_noop_generation()
+
+    result = generation.generate(
+        request(),
+    )
+
+    assert result.engineering_decision is (
+        necessity.decision
+    )
+
+    assert result.engineering_decision.implementation_required is False
+
+
+def test_engineering_generation_returns_no_post_implementation_analysis_when_not_required():
+
+    generation, *_ = create_noop_generation()
+
+    result = generation.generate(
+        request(),
+    )
+
+    assert result.quality_assessment is None
+    assert result.optimization_decision is None

@@ -1,51 +1,39 @@
 from brain.engineering.analysis.complexity_quality_analyzer import (
     ComplexityQualityAnalyzer,
 )
-
-from brain.engineering.analysis.models.analysis_request import (
-    AnalysisRequest,
-)
-
 from brain.engineering.analysis.models.complexity_quality_request import (
     ComplexityQualityRequest,
 )
-
+from brain.engineering.analysis.models.analysis_request import (
+    AnalysisRequest,
+)
 from brain.engineering.analysis.necessity_reuse_analyzer import (
     NecessityReuseAnalyzer,
 )
-
 from brain.engineering.generation.code_generator import (
     CodeGenerator,
 )
-
 from brain.engineering.generation.engineering_generation import (
     EngineeringGeneration,
 )
-
 from brain.engineering.generation.final_code_generator import (
     FinalCodeGenerator,
 )
-
 from brain.engineering.generation.models.engineering_generation_request import (
     EngineeringGenerationRequest,
 )
-
 from brain.engineering.generation.models.engineering_generation_result import (
     EngineeringGenerationResult,
 )
-
 from brain.engineering.generation.models.final_generation_request import (
     FinalGenerationRequest,
 )
-
 from brain.engineering.generation.models.generation_request import (
     GenerationRequest,
 )
-
 from brain.engineering.optimization.models.optimization_decision_request import (
     OptimizationDecisionRequest,
 )
-
 from brain.engineering.optimization.optimization_decision_analyzer import (
     OptimizationDecisionAnalyzer,
 )
@@ -55,13 +43,7 @@ class AIEngineeringGeneration(
     EngineeringGeneration,
 ):
     """
-    Orchestrates the complete engineering generation workflow.
-
-    The workflow performs necessity and reuse analysis, generates a
-    candidate implementation, evaluates its complexity and quality,
-    determines whether optimization is justified, and finally
-    generates the implementation that incorporates the resulting
-    engineering decisions.
+    Executes the complete engineering generation workflow.
     """
 
     def __init__(
@@ -77,7 +59,8 @@ class AIEngineeringGeneration(
             NecessityReuseAnalyzer,
         ):
             raise TypeError(
-                "necessity_reuse_analyzer must be a NecessityReuseAnalyzer"
+                "necessity_reuse_analyzer must be a "
+                "NecessityReuseAnalyzer"
             )
 
         if not isinstance(
@@ -93,7 +76,8 @@ class AIEngineeringGeneration(
             ComplexityQualityAnalyzer,
         ):
             raise TypeError(
-                "complexity_quality_analyzer must be a ComplexityQualityAnalyzer"
+                "complexity_quality_analyzer must be a "
+                "ComplexityQualityAnalyzer"
             )
 
         if not isinstance(
@@ -101,7 +85,8 @@ class AIEngineeringGeneration(
             OptimizationDecisionAnalyzer,
         ):
             raise TypeError(
-                "optimization_decision_analyzer must be an OptimizationDecisionAnalyzer"
+                "optimization_decision_analyzer must be an "
+                "OptimizationDecisionAnalyzer"
             )
 
         if not isinstance(
@@ -109,16 +94,15 @@ class AIEngineeringGeneration(
             FinalCodeGenerator,
         ):
             raise TypeError(
-                "final_code_generator must be a FinalCodeGenerator"
+                "final_code_generator must be a "
+                "FinalCodeGenerator"
             )
 
         self._necessity_reuse_analyzer = (
             necessity_reuse_analyzer
         )
 
-        self._code_generator = (
-            code_generator
-        )
+        self._code_generator = code_generator
 
         self._complexity_quality_analyzer = (
             complexity_quality_analyzer
@@ -152,17 +136,23 @@ class AIEngineeringGeneration(
                     design=request.design,
                     plan=request.plan,
                     existing_code=request.existing_code,
-                ),
+                )
             )
         )
 
-        candidate_result = (
-            self._code_generator.generate(
-                GenerationRequest(
-                    task=request.task,
-                    design=request.design,
-                    plan=request.plan,
-                ),
+        if not engineering_decision.implementation_required:
+            return EngineeringGenerationResult(
+                changes=(),
+                engineering_decision=engineering_decision,
+                quality_assessment=None,
+                optimization_decision=None,
+            )
+
+        candidate_result = self._code_generator.generate(
+            GenerationRequest(
+                task=request.task,
+                design=request.design,
+                plan=request.plan,
             )
         )
 
@@ -175,7 +165,7 @@ class AIEngineeringGeneration(
                     engineering_decision=engineering_decision,
                     existing_code=request.existing_code,
                     proposed_changes=candidate_result.changes,
-                ),
+                )
             )
         )
 
@@ -189,22 +179,20 @@ class AIEngineeringGeneration(
                     quality_assessment=quality_assessment,
                     existing_code=request.existing_code,
                     proposed_changes=candidate_result.changes,
-                ),
+                )
             )
         )
 
-        final_result = (
-            self._final_code_generator.generate(
-                FinalGenerationRequest(
-                    task=request.task,
-                    design=request.design,
-                    plan=request.plan,
-                    existing_code=request.existing_code,
-                    engineering_decision=engineering_decision,
-                    quality_assessment=quality_assessment,
-                    optimization_decision=optimization_decision,
-                    proposed_changes=candidate_result.changes,
-                ),
+        final_result = self._final_code_generator.generate(
+            FinalGenerationRequest(
+                task=request.task,
+                design=request.design,
+                plan=request.plan,
+                existing_code=request.existing_code,
+                engineering_decision=engineering_decision,
+                quality_assessment=quality_assessment,
+                optimization_decision=optimization_decision,
+                proposed_changes=candidate_result.changes,
             )
         )
 

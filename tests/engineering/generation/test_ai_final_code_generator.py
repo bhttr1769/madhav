@@ -175,6 +175,7 @@ def existing_code() -> CodeStructure:
 def engineering_decision() -> EngineeringDecision:
 
     return EngineeringDecision(
+        implementation_required=True,
         necessity=(
             "A new implementation is required "
             "to satisfy the health endpoint task."
@@ -286,6 +287,7 @@ def valid_response() -> str:
             },
         ],
         "decision": {
+            "implementation_required": True,
             "necessity": (
                 "A new implementation is required "
                 "to satisfy the health endpoint task."
