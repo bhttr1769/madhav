@@ -153,6 +153,8 @@ class AIEngineeringGeneration(
                 task=request.task,
                 design=request.design,
                 plan=request.plan,
+                existing_code=request.existing_code,
+                engineering_decision=engineering_decision,
             )
         )
 
