@@ -12,6 +12,9 @@ from brain.evolution.models.evolution_plan import (
 from brain.evolution.models.evolution_request import (
     EvolutionRequest,
 )
+from brain.capabilities.models.capability_descriptor import (
+    CapabilityDescriptor,
+)
 
 
 def _request(
@@ -80,12 +83,7 @@ def test_planner_creates_plan_for_missing_capability():
     )
 
     assert plan.tasks == (
-        "analyze capability requirements",
-        "design capability architecture",
-        "implement capability",
-        "generate tests",
-        "review implementation",
-        "verify implementation",
+        "implement capability: web_research",
     )
 
 
@@ -154,3 +152,59 @@ def test_planner_rejects_mismatched_capability():
             _request("web_research"),
             _missing_assessment("memory"),
         )
+
+def test_plan_uses_available_capabilities():
+    planner = EvolutionPlanner()
+
+    request = EvolutionRequest(
+        requested_capability="repository_analysis",
+        objective="Analyze a repository.",
+        constraints=frozenset(),
+        mode="proposal",
+    )
+
+    assessment = CapabilityAssessment(
+        requested_capability="repository_analysis",
+        available=False,
+        status="unavailable",
+        matched_capabilities=frozenset(),
+        missing_capabilities=frozenset(
+            {"repository_analysis"},
+        ),
+        rationale="Capability is not registered.",
+    )
+
+    available_capability = CapabilityDescriptor(
+        id="file_read",
+        name="File Read",
+        description="Reads files.",
+        version="1.0.0",
+        entry_point="brain.file_read.FileRead",
+        dependencies=frozenset(),
+    )
+
+    result = planner.plan(
+        request,
+        assessment,
+        available_capabilities=(
+            available_capability,
+        ),
+    )
+
+    assert result.requested_capability == (
+        "repository_analysis"
+    )
+
+    assert result.required_capabilities == (
+        frozenset({"repository_analysis"})
+    )
+
+    assert result.tasks == (
+        "implement capability: repository_analysis",
+    )
+
+    assert result.validation_strategy == (
+        "run generated tests",
+        "run existing engineering tests",
+        "verify capability integration",
+    )
