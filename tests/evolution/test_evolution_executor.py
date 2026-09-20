@@ -54,7 +54,18 @@ from brain.evolution.models.evolution_request import (
 from brain.evolution.models.evolution_task_result import (
     EvolutionTaskResult,
 )
-
+from brain.evolution.evolution_history_builder import (
+    EvolutionHistoryBuilder,
+)
+from brain.evolution.evolution_history_recorder import (
+    EvolutionHistoryRecorder,
+)
+from brain.evolution.evolution_id_generator import (
+    EvolutionIdGenerator,
+)
+from brain.evolution.models.evolution_history import (
+    EvolutionHistory,
+)
 
 class FakeRequirementService:
     def __init__(self, result):
@@ -201,6 +212,69 @@ class FakeCapabilityDiscovery:
     def discover(self, providers):
         self.calls.append(providers)
         return self._result
+
+class FakeEvolutionIdGenerator:
+    def __init__(self):
+        self.calls = 0
+
+    def generate(self):
+        self.calls += 1
+        return "evo-test-001"
+
+
+class FakeEvolutionHistoryBuilder:
+    def __init__(self):
+        self.calls = []
+
+    def build(
+        self,
+        evolution_id,
+        request,
+        result,
+        started_at,
+        completed_at,
+        status,
+    ):
+        self.calls.append(
+            (
+                evolution_id,
+                request,
+                result,
+                started_at,
+                completed_at,
+                status,
+            )
+        )
+
+        return EvolutionHistory(
+            evolution_id=evolution_id,
+            requested_capability=(
+                result.requested_capability
+            ),
+            objective=request.objective,
+            mode=request.mode,
+            status=status,
+            started_at=started_at,
+            completed_at=completed_at,
+            task_count=len(
+                result.task_decomposition.tasks
+            ),
+            completed_task_count=len(
+                result.task_results
+            ),
+            passed=result.passed,
+            termination_reason=(
+                "test"
+            ),
+        )
+
+
+class FakeEvolutionHistoryRecorder:
+    def __init__(self):
+        self.calls = []
+
+    def record(self, history):
+        self.calls.append(history)
 
 
 def _context():
@@ -1481,3 +1555,247 @@ def test_autonomous_execution_does_not_integrate_after_multi_task_failure():
 
     assert discovery.calls == []
     assert integrator.calls == []
+
+def test_executor_records_evolution_history():
+    history_recorder = (
+        FakeEvolutionHistoryRecorder()
+    )
+
+    history_builder = (
+        FakeEvolutionHistoryBuilder()
+    )
+
+    id_generator = (
+        FakeEvolutionIdGenerator()
+    )
+
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    ) = _executor()
+
+    executor._history_recorder = (
+        history_recorder
+    )
+
+    executor._history_builder = (
+        history_builder
+    )
+
+    executor._evolution_id_generator = (
+        id_generator
+    )
+
+    request = EvolutionRequest(
+        requested_capability="web_research",
+        objective="Add web research.",
+        constraints=frozenset(),
+        mode="supervised",
+    )
+
+    result = executor.execute(request)
+
+    assert id_generator.calls == 1
+
+    assert len(
+        history_builder.calls
+    ) == 1
+
+    (
+        evolution_id,
+        recorded_request,
+        recorded_result,
+        started_at,
+        completed_at,
+        status,
+    ) = history_builder.calls[0]
+
+    assert evolution_id == (
+        "evo-test-001"
+    )
+
+    assert recorded_request == request
+    assert recorded_result == result
+
+    assert started_at <= completed_at
+    assert status == "completed"
+
+    assert len(
+        history_recorder.calls
+    ) == 1
+
+    history = history_recorder.calls[0]
+
+    assert isinstance(
+        history,
+        EvolutionHistory,
+    )
+
+    assert history.evolution_id == (
+        "evo-test-001"
+    )
+
+def test_executor_records_failed_evolution():
+    (
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        context,
+    ) = _executor()
+
+    (
+        requirement,
+        _,
+        decomposition,
+        design,
+        plan,
+        existing_code,
+        generation_result,
+        test_result,
+        _,
+    ) = context
+
+    failed_loop_result = EngineeringLoopResult(
+        changes=(
+            generation_result.changes
+            + test_result.changes
+        ),
+        passed=False,
+        iterations=(),
+        termination_reason=(
+            "max_iterations_reached"
+        ),
+    )
+
+    history_recorder = (
+        FakeEvolutionHistoryRecorder()
+    )
+
+    history_builder = (
+        FakeEvolutionHistoryBuilder()
+    )
+
+    id_generator = (
+        FakeEvolutionIdGenerator()
+    )
+
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    ) = _executor(
+        loop_result=failed_loop_result,
+    )
+
+    executor._history_recorder = (
+        history_recorder
+    )
+
+    executor._history_builder = (
+        history_builder
+    )
+
+    executor._evolution_id_generator = (
+        id_generator
+    )
+
+    request = EvolutionRequest(
+        requested_capability="web_research",
+        objective="Add web research.",
+        constraints=frozenset(),
+        mode="supervised",
+    )
+
+    result = executor.execute(request)
+
+    assert result.passed is False
+
+    assert len(
+        history_builder.calls
+    ) == 1
+
+    assert (
+        history_builder.calls[0][-1]
+        == "failed"
+    )
+
+    assert len(
+        history_recorder.calls
+    ) == 1
+
+    assert (
+        history_recorder.calls[0].passed
+        is False
+    )
+
+def test_proposal_mode_does_not_record_history():
+    history_recorder = (
+        FakeEvolutionHistoryRecorder()
+    )
+
+    history_builder = (
+        FakeEvolutionHistoryBuilder()
+    )
+
+    id_generator = (
+        FakeEvolutionIdGenerator()
+    )
+
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    ) = _executor()
+
+    executor._history_recorder = (
+        history_recorder
+    )
+
+    executor._history_builder = (
+        history_builder
+    )
+
+    executor._evolution_id_generator = (
+        id_generator
+    )
+
+    request = EvolutionRequest(
+        requested_capability="web_research",
+        objective="Add web research.",
+        constraints=frozenset(),
+        mode="proposal",
+    )
+
+    result = executor.propose(request)
+
+    assert result.requested_capability == (
+        "web_research"
+    )
+
+    assert id_generator.calls == 0
+    assert history_builder.calls == []
+    assert history_recorder.calls == []

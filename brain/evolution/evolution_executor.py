@@ -1,3 +1,18 @@
+from datetime import datetime
+
+from brain.evolution.evolution_history_recorder import (
+    EvolutionHistoryRecorder,
+)
+from brain.evolution.evolution_id_generator import (
+    EvolutionIdGenerator,
+)
+from brain.evolution.models.evolution_history import (
+    EvolutionHistory,
+)
+from brain.evolution.evolution_history_builder import (
+    EvolutionHistoryBuilder,
+)
+
 from brain.capabilities.capability_discovery import (
     CapabilityDiscovery,
 )
@@ -49,6 +64,9 @@ class EvolutionExecutor:
         task_sequencer=None,
         task_executor=None,
         failure_policy=None,
+        history_recorder=None,
+        evolution_id_generator=None,
+        history_builder=None,
     ):
         self._requirement_service = requirement_service
         self._task_decomposer = task_decomposer
@@ -112,6 +130,24 @@ class EvolutionExecutor:
             else EvolutionFailurePolicy()
         )
 
+        self._history_recorder = (
+            history_recorder
+            if history_recorder is not None
+            else EvolutionHistoryRecorder()
+        )
+
+        self._evolution_id_generator = (
+            evolution_id_generator
+            if evolution_id_generator is not None
+            else EvolutionIdGenerator()
+        ) 
+
+        self._history_builder = (
+            history_builder
+            if history_builder is not None
+            else EvolutionHistoryBuilder()
+        )
+
     def propose(
         self,
         request: EvolutionRequest,
@@ -168,6 +204,11 @@ class EvolutionExecutor:
                 "proposal mode requires propose(), "
                 "not execute()"
             )
+        evolution_id = (
+            self._evolution_id_generator.generate()
+        )
+
+        started_at = datetime.now()
 
         if mode is EvolutionMode.AUTONOMOUS:
             if not isinstance(
@@ -262,6 +303,24 @@ class EvolutionExecutor:
             proposed_changes=proposed_changes,
             engineering_result=engineering_result,
             task_results=task_results_tuple,
+        )
+        completed_at = datetime.now()
+
+        history = self._history_builder.build(
+            evolution_id=evolution_id,
+            request=request,
+            result=evolution_result,
+            started_at=started_at,
+            completed_at=completed_at,
+            status=(
+                "completed"
+                if evolution_result.passed
+                else "failed"
+            ),
+        )
+
+        self._history_recorder.record(
+            history
         )
 
         if (
