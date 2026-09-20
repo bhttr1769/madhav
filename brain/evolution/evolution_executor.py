@@ -1,17 +1,17 @@
 from brain.capabilities.capability_discovery import (
     CapabilityDiscovery,
 )
-from brain.engineering.generation.models.engineering_generation_request import (
-    EngineeringGenerationRequest,
-)
-from brain.engineering.loop.models.engineering_loop_request import (
-    EngineeringLoopRequest,
-)
-from brain.engineering.testing.models.test_generation_request import (
-    TestGenerationRequest,
+from brain.evolution.evolution_failure_policy import (
+    EvolutionFailurePolicy,
 )
 from brain.evolution.evolution_policy import (
     EvolutionPolicy,
+)
+from brain.evolution.evolution_task_executor import (
+    EvolutionTaskExecutor,
+)
+from brain.evolution.evolution_task_sequencer import (
+    EvolutionTaskSequencer,
 )
 from brain.evolution.models.evolution_discovery_request import (
     EvolutionDiscoveryRequest,
@@ -46,6 +46,9 @@ class EvolutionExecutor:
         policy=None,
         discovery=None,
         capability_integrator=None,
+        task_sequencer=None,
+        task_executor=None,
+        failure_policy=None,
     ):
         self._requirement_service = requirement_service
         self._task_decomposer = task_decomposer
@@ -78,6 +81,35 @@ class EvolutionExecutor:
             capability_integrator
             if capability_integrator is not None
             else None
+        )
+
+        self._task_sequencer = (
+            task_sequencer
+            if task_sequencer is not None
+            else EvolutionTaskSequencer()
+        )
+
+        self._task_executor = (
+            task_executor
+            if task_executor is not None
+            else EvolutionTaskExecutor(
+                engineering_generation=(
+                    engineering_generation
+                ),
+                test_generator=test_generator,
+                engineering_loop=engineering_loop,
+                existing_code=existing_code,
+                verification_command=(
+                    verification_command
+                ),
+                max_iterations=max_iterations,
+            )
+        )
+
+        self._failure_policy = (
+            failure_policy
+            if failure_policy is not None
+            else EvolutionFailurePolicy()
         )
 
     def propose(
@@ -168,41 +200,34 @@ class EvolutionExecutor:
                 "implementation"
             )
 
-        task = self._select_task(
-            decomposition
+        tasks = self._task_sequencer.sequence(
+            decomposition.tasks
         )
 
-        generation_result = (
-            self._engineering_generation.generate(
-                EngineeringGenerationRequest(
-                    task=task,
-                    design=design,
-                    plan=plan,
-                    existing_code=self._existing_code,
-                )
+        if not tasks:
+            raise ValueError(
+                "task decomposition must contain "
+                "at least one task"
             )
-        )
 
-        implementation_changes = (
-            generation_result.changes
-        )
+        task_results = []
 
-        test_result = self._test_generator.generate(
-            TestGenerationRequest(
+        for task in tasks:
+            task_result = self._task_executor.execute(
                 task=task,
                 design=design,
                 plan=plan,
-                existing_code=self._existing_code,
-                proposed_changes=(
-                    implementation_changes
-                ),
+                task_id=task.id,
             )
-        )
 
-        proposed_changes = (
-            implementation_changes
-            + test_result.changes
-        )
+            task_results.append(
+                task_result
+            )
+
+            if self._failure_policy.should_stop(
+                task_result
+            ):
+                break
 
         if not self._policy.allows_verification(
             mode
@@ -212,33 +237,21 @@ class EvolutionExecutor:
                 "verification"
             )
 
-        loop_request = EngineeringLoopRequest(
-            task=task,
-            design=design,
-            plan=plan,
-            existing_code=self._existing_code,
-            proposed_changes=proposed_changes,
-            verification_command=(
-                self._verification_command
-            ),
-            max_iterations=self._max_iterations,
+        task_results_tuple = tuple(
+            task_results
+        )
+
+        proposed_changes = tuple(
+            change
+            for task_result in task_results_tuple
+            for change in task_result.proposed_changes
         )
 
         engineering_result = (
-            self._engineering_loop.execute(
-                loop_request
-            )
+            task_results_tuple[-1].engineering_result
         )
 
-        if (
-            mode is EvolutionMode.AUTONOMOUS
-            and engineering_result.passed
-        ):
-            self._integrate(
-                integration_request
-            )
-
-        return EvolutionResult(
+        evolution_result = EvolutionResult(
             requested_capability=(
                 request.requested_capability
             ),
@@ -248,7 +261,18 @@ class EvolutionExecutor:
             plan=plan,
             proposed_changes=proposed_changes,
             engineering_result=engineering_result,
+            task_results=task_results_tuple,
         )
+
+        if (
+            mode is EvolutionMode.AUTONOMOUS
+            and evolution_result.passed
+        ):
+            self._integrate(
+                integration_request
+            )
+
+        return evolution_result
 
     def _integrate(
         self,
@@ -270,7 +294,9 @@ class EvolutionExecutor:
             )
 
         capabilities = self._discovery.discover(
-            providers=(discovery_request.provider,),
+            providers=(
+                discovery_request.provider,
+            ),
         )
 
         if not capabilities:
@@ -320,15 +346,3 @@ class EvolutionExecutor:
             design,
             plan,
         )
-
-    @staticmethod
-    def _select_task(
-        decomposition,
-    ):
-        if not decomposition.tasks:
-            raise ValueError(
-                "task decomposition must contain "
-                "at least one task"
-            )
-
-        return decomposition.tasks[0]

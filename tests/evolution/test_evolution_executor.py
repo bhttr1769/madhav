@@ -51,6 +51,9 @@ from brain.evolution.models.evolution_proposal import (
 from brain.evolution.models.evolution_request import (
     EvolutionRequest,
 )
+from brain.evolution.models.evolution_task_result import (
+    EvolutionTaskResult,
+)
 
 
 class FakeRequirementService:
@@ -138,6 +141,39 @@ class FakeCapabilityIntegrator:
                 verification_passed,
             )
         )
+
+class FakeEvolutionTaskExecutor:
+    def __init__(
+        self,
+        results_by_task_id,
+    ):
+        self._results_by_task_id = results_by_task_id
+        self.calls = []
+        self.executed_tasks = []
+
+    def execute(
+        self,
+        task,
+        design,
+        plan,
+        task_id,
+    ):
+        self.calls.append(
+            (
+                task,
+                design,
+                plan,
+                task_id,
+            )
+        )
+
+        self.executed_tasks.append(
+            task_id
+        )
+
+        return self._results_by_task_id[
+            task_id
+        ]
 
 
 class EvolvedCapabilityProvider:
@@ -391,6 +427,145 @@ def _executor(
         ),
     )
 
+def _task(
+    task_id,
+    description,
+):
+    return Task(
+        id=task_id,
+        description=description,
+        category="implementation",
+        dependencies=frozenset(),
+        affected_areas=frozenset(
+            {"brain/research"}
+        ),
+        acceptance_criteria=frozenset(
+            {"verification passes"}
+        ),
+    )
+
+
+def _multi_task_decomposition(
+    requirement,
+    *tasks,
+):
+    return TaskDecomposition(
+        requirement=requirement,
+        tasks=tuple(tasks),
+    )
+
+
+def _task_result(
+    task_id,
+    description,
+    passed=True,
+):
+    change = CodeChange(
+        path=f"{task_id}.py",
+        operation="create",
+        content=f"{task_id} implementation",
+    )
+
+    iteration = EngineeringLoopIteration(
+        iteration=1,
+        changes=(change,),
+        passed=passed,
+        summary=(
+            "Verification passed."
+            if passed
+            else "Verification failed."
+        ),
+    )
+
+    loop_result = EngineeringLoopResult(
+        changes=(change,),
+        passed=passed,
+        iterations=(iteration,),
+        termination_reason=(
+            "verification_passed"
+            if passed
+            else "max_iterations_reached"
+        ),
+    )
+
+    return EvolutionTaskResult(
+        task_id=task_id,
+        task_description=description,
+        proposed_changes=(change,),
+        engineering_result=loop_result,
+    )
+
+def _multi_task_executor(
+    task_results,
+):
+    (
+        requirement,
+        task,
+        decomposition,
+        design,
+        plan,
+        existing_code,
+        generation_result,
+        test_result,
+        loop_result,
+    ) = _context()
+
+    tasks = tuple(
+        _task(
+            task_id=task_id,
+            description=task_description,
+        )
+        for task_id, task_description in (
+            ("task-1", "First task."),
+            ("task-2", "Second task."),
+            ("task-3", "Third task."),
+        )
+        if task_id in task_results
+    )
+
+    decomposition = _multi_task_decomposition(
+        requirement,
+        *tasks,
+    )
+
+    task_executor = FakeEvolutionTaskExecutor(
+        task_results
+    )
+
+    executor = EvolutionExecutor(
+        requirement_service=FakeRequirementService(
+            requirement
+        ),
+        task_decomposer=FakeTaskDecomposer(
+            decomposition
+        ),
+        system_designer=FakeSystemDesigner(
+            design
+        ),
+        planner=FakePlanner(plan),
+        engineering_generation=FakeEngineeringGeneration(
+            generation_result
+        ),
+        test_generator=FakeTestGenerator(
+            test_result
+        ),
+        engineering_loop=FakeEngineeringLoop(
+            loop_result
+        ),
+        existing_code=existing_code,
+        verification_command="pytest tests -q",
+        max_iterations=3,
+        task_executor=task_executor,
+    )
+
+    return (
+        executor,
+        task_executor,
+        requirement,
+        decomposition,
+        design,
+        plan,
+    )
 
 def test_executor_runs_complete_engineering_pipeline():
     (
@@ -1017,5 +1192,292 @@ def test_autonomous_execution_does_not_integrate_after_failed_verification():
     )
 
     assert result.engineering_result.passed is False
+    assert discovery.calls == []
+    assert integrator.calls == []
+
+def test_executor_executes_all_tasks_in_sequence():
+    task_results = {
+        "task-1": _task_result(
+            "task-1",
+            "First task.",
+        ),
+        "task-2": _task_result(
+            "task-2",
+            "Second task.",
+        ),
+    }
+
+    executor, task_executor, _, _, _, _ = (
+        _multi_task_executor(
+            task_results
+        )
+    )
+
+    request = EvolutionRequest(
+        requested_capability="web_research",
+        objective="Add web research.",
+        constraints=frozenset(),
+        mode="supervised",
+    )
+
+    result = executor.execute(request)
+
+    assert task_executor.executed_tasks == [
+        "task-1",
+        "task-2",
+    ]
+
+    assert [
+        task_result.task_id
+        for task_result in result.task_results
+    ] == [
+        "task-1",
+        "task-2",
+    ]
+
+
+def test_executor_aggregates_changes_from_all_tasks():
+    task_results = {
+        "task-1": _task_result(
+            "task-1",
+            "First task.",
+        ),
+        "task-2": _task_result(
+            "task-2",
+            "Second task.",
+        ),
+    }
+
+    executor, _, _, _, _, _ = (
+        _multi_task_executor(
+            task_results
+        )
+    )
+
+    request = EvolutionRequest(
+        requested_capability="web_research",
+        objective="Add web research.",
+        constraints=frozenset(),
+        mode="supervised",
+    )
+
+    result = executor.execute(request)
+
+    expected_changes = (
+        task_results["task-1"].proposed_changes
+        + task_results["task-2"].proposed_changes
+    )
+
+    assert result.all_proposed_changes == (
+        expected_changes
+    )
+
+
+def test_executor_stops_after_first_failed_task():
+    task_results = {
+        "task-1": _task_result(
+            "task-1",
+            "First task.",
+            passed=False,
+        ),
+        "task-2": _task_result(
+            "task-2",
+            "Second task.",
+            passed=True,
+        ),
+    }
+
+    executor, task_executor, _, _, _, _ = (
+        _multi_task_executor(
+            task_results
+        )
+    )
+
+    request = EvolutionRequest(
+        requested_capability="web_research",
+        objective="Add web research.",
+        constraints=frozenset(),
+        mode="supervised",
+    )
+
+    result = executor.execute(request)
+
+    assert task_executor.executed_tasks == [
+        "task-1",
+    ]
+
+    assert len(result.task_results) == 1
+    assert result.passed is False
+
+
+def test_executor_passes_when_all_tasks_pass():
+    task_results = {
+        "task-1": _task_result(
+            "task-1",
+            "First task.",
+        ),
+        "task-2": _task_result(
+            "task-2",
+            "Second task.",
+        ),
+    }
+
+    executor, task_executor, _, _, _, _ = (
+        _multi_task_executor(
+            task_results
+        )
+    )
+
+    request = EvolutionRequest(
+        requested_capability="web_research",
+        objective="Add web research.",
+        constraints=frozenset(),
+        mode="supervised",
+    )
+
+    result = executor.execute(request)
+
+    assert task_executor.executed_tasks == [
+        "task-1",
+        "task-2",
+    ]
+
+    assert len(result.task_results) == 2
+    assert result.passed is True
+
+def test_autonomous_execution_integrates_only_after_all_tasks_pass():
+    task_results = {
+        "task-1": _task_result(
+            "task-1",
+            "First task.",
+        ),
+        "task-2": _task_result(
+            "task-2",
+            "Second task.",
+        ),
+    }
+
+    (
+        executor,
+        task_executor,
+        requirement,
+        decomposition,
+        design,
+        plan,
+    ) = _multi_task_executor(
+        task_results
+    )
+
+    provider = EvolvedCapabilityProvider()
+
+    capability = provider.capability_descriptor()
+
+    discovery = FakeCapabilityDiscovery(
+        (capability,)
+    )
+
+    integrator = FakeCapabilityIntegrator()
+
+    executor._discovery = discovery
+    executor._capability_integrator = integrator
+
+    request = EvolutionRequest(
+        requested_capability="web_research",
+        objective="Add web research.",
+        constraints=frozenset(),
+        mode="autonomous",
+    )
+
+    discovery_request = EvolutionDiscoveryRequest(
+        provider=provider,
+    )
+
+    result = executor.execute(
+        request,
+        integration_request=discovery_request,
+    )
+
+    assert result.passed is True
+
+    assert task_executor.executed_tasks == [
+        "task-1",
+        "task-2",
+    ]
+
+    assert discovery.calls == [
+        (provider,),
+    ]
+
+    assert integrator.calls == [
+        (capability, True),
+    ]
+
+
+def test_autonomous_execution_does_not_integrate_after_multi_task_failure():
+    task_results = {
+        "task-1": _task_result(
+            "task-1",
+            "First task.",
+            passed=True,
+        ),
+        "task-2": _task_result(
+            "task-2",
+            "Second task.",
+            passed=False,
+        ),
+        "task-3": _task_result(
+            "task-3",
+            "Third task.",
+            passed=True,
+        ),
+    }
+
+    (
+        executor,
+        task_executor,
+        _,
+        _,
+        _,
+        _,
+    ) = _multi_task_executor(
+        task_results
+    )
+
+    provider = EvolvedCapabilityProvider()
+
+    capability = provider.capability_descriptor()
+
+    discovery = FakeCapabilityDiscovery(
+        (capability,)
+    )
+
+    integrator = FakeCapabilityIntegrator()
+
+    executor._discovery = discovery
+    executor._capability_integrator = integrator
+
+    request = EvolutionRequest(
+        requested_capability="web_research",
+        objective="Add web research.",
+        constraints=frozenset(),
+        mode="autonomous",
+    )
+
+    discovery_request = EvolutionDiscoveryRequest(
+        provider=provider,
+    )
+
+    result = executor.execute(
+        request,
+        integration_request=discovery_request,
+    )
+
+    assert result.passed is False
+
+    assert task_executor.executed_tasks == [
+        "task-1",
+        "task-2",
+    ]
+
     assert discovery.calls == []
     assert integrator.calls == []
