@@ -6,6 +6,9 @@ from brain.capabilities.models.capability_descriptor import (
 from brain.capabilities.models.capability_assessment import (
     CapabilityAssessment,
 )
+from brain.evolution.models.evolution_experience import (
+    EvolutionExperience,
+)
 from brain.evolution.models.evolution_request import (
     EvolutionRequest,
 )
@@ -19,3 +22,7 @@ class EvolutionPlanningContext:
         CapabilityDescriptor,
         ...,
     ]
+    experiences: tuple[
+        EvolutionExperience,
+        ...,
+    ] = ()

@@ -15,6 +15,9 @@ from brain.evolution.models.evolution_request import (
 from brain.capabilities.models.capability_descriptor import (
     CapabilityDescriptor,
 )
+from brain.evolution.models.evolution_experience import (
+    EvolutionExperience,
+)
 
 
 def _request(
@@ -207,4 +210,73 @@ def test_plan_uses_available_capabilities():
         "run generated tests",
         "run existing engineering tests",
         "verify capability integration",
+    )
+
+def _experience(
+    capability="web_research",
+):
+    return EvolutionExperience(
+        evolution_id="evo-001",
+        requested_capability=capability,
+        task_id="task-001",
+        task_description=(
+            f"implement capability: {capability}"
+        ),
+        outcome="success",
+        lesson="Previous implementation succeeded.",
+        reusable=True,
+    )
+
+
+def test_planner_accepts_evolution_experience():
+    planner = EvolutionPlanner()
+
+    result = planner.plan(
+        _request(),
+        _missing_assessment(),
+        experiences=(
+            _experience(),
+        ),
+    )
+
+    assert isinstance(
+        result,
+        EvolutionPlan,
+    )
+
+    assert result.requested_capability == (
+        "web_research"
+    )
+
+
+def test_planner_rejects_non_tuple_experiences():
+    with pytest.raises(TypeError):
+        EvolutionPlanner().plan(
+            _request(),
+            _missing_assessment(),
+            experiences=[],
+        )
+
+
+def test_planner_rejects_invalid_experience():
+    with pytest.raises(TypeError):
+        EvolutionPlanner().plan(
+            _request(),
+            _missing_assessment(),
+            experiences=(None,),
+        )
+
+
+def test_planner_remains_backward_compatible_without_experience():
+    result = EvolutionPlanner().plan(
+        _request(),
+        _missing_assessment(),
+    )
+
+    assert result.tasks == (
+        "implement capability: web_research",
+    )
+
+    assert result.required_capabilities == (
+        frozenset({"web_research"})
     )

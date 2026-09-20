@@ -19,6 +19,9 @@ from brain.evolution.models.evolution_planning_context import (
 from brain.evolution.models.evolution_request import (
     EvolutionRequest,
 )
+from brain.evolution.models.evolution_experience import (
+    EvolutionExperience,
+)
 
 
 class EvolutionPlanner:
@@ -51,6 +54,7 @@ class EvolutionPlanner:
         request: EvolutionRequest,
         assessment: CapabilityAssessment,
         available_capabilities=(),
+        experiences=(),
     ) -> EvolutionPlan:
         if not isinstance(
             request,
@@ -85,12 +89,31 @@ class EvolutionPlanner:
                 "available_capabilities must be a tuple"
             )
 
+        if not isinstance(
+            experiences,
+            tuple,
+        ):
+            raise TypeError(
+                "experiences must be a tuple"
+            )
+
+        for experience in experiences:
+            if not isinstance(
+                experience,
+                EvolutionExperience,
+            ):
+                raise TypeError(
+                    "experiences must contain "
+                    "EvolutionExperience instances"
+                )
+
         context = EvolutionPlanningContext(
             request=request,
             assessment=assessment,
             available_capabilities=(
                 available_capabilities
             ),
+            experiences=experiences,
         )
 
         if context.assessment.available:
