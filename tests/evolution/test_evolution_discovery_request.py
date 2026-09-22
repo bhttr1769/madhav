@@ -8,6 +8,8 @@ def test_evolution_discovery_request_stores_provider():
 
     request = EvolutionDiscoveryRequest(
         provider=provider,
+        repository_path="D:/Madhav",
     )
 
     assert request.provider is provider
+    assert request.repository_path == "D:/Madhav"

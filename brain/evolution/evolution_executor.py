@@ -16,6 +16,9 @@ from brain.evolution.evolution_history_builder import (
 from brain.capabilities.capability_discovery import (
     CapabilityDiscovery,
 )
+from brain.evolution.evolution_checkpoint import (
+    EvolutionCheckpointManager,
+)
 from brain.evolution.evolution_failure_policy import (
     EvolutionFailurePolicy,
 )
@@ -27,6 +30,12 @@ from brain.evolution.evolution_task_executor import (
 )
 from brain.evolution.evolution_task_sequencer import (
     EvolutionTaskSequencer,
+)
+from brain.evolution.evolution_integration_recovery_coordinator import (
+    EvolutionIntegrationRecoveryCoordinator,
+)
+from brain.evolution.git.evolution_git_commit import (
+    EvolutionGitCommit,
 )
 from brain.evolution.models.evolution_discovery_request import (
     EvolutionDiscoveryRequest,
@@ -42,6 +51,9 @@ from brain.evolution.models.evolution_request import (
 )
 from brain.evolution.models.evolution_result import (
     EvolutionResult,
+)
+from brain.evolution.evolution_safety_policy import (
+    EvolutionSafetyPolicy,
 )
 
 
@@ -67,6 +79,10 @@ class EvolutionExecutor:
         history_recorder=None,
         evolution_id_generator=None,
         history_builder=None,
+        checkpoint_manager=None,
+        evolution_git_commit=None,
+        integration_recovery_coordinator=None,
+        safety_policy=None,
     ):
         self._requirement_service = requirement_service
         self._task_decomposer = task_decomposer
@@ -140,12 +156,30 @@ class EvolutionExecutor:
             evolution_id_generator
             if evolution_id_generator is not None
             else EvolutionIdGenerator()
-        ) 
+        )
 
         self._history_builder = (
             history_builder
             if history_builder is not None
             else EvolutionHistoryBuilder()
+        )
+
+        self._checkpoint_manager = (
+            checkpoint_manager
+        )
+
+        self._evolution_git_commit = (
+            evolution_git_commit
+        )
+
+        self._integration_recovery_coordinator = (
+            integration_recovery_coordinator
+        )
+
+        self._safety_policy = (
+            safety_policy
+            if safety_policy is not None
+            else EvolutionSafetyPolicy()
         )
 
     def propose(
@@ -204,6 +238,7 @@ class EvolutionExecutor:
                 "proposal mode requires propose(), "
                 "not execute()"
             )
+
         evolution_id = (
             self._evolution_id_generator.generate()
         )
@@ -218,6 +253,27 @@ class EvolutionExecutor:
                 raise TypeError(
                     "autonomous execution requires an "
                     "EvolutionDiscoveryRequest"
+                )
+
+            if self._checkpoint_manager is None:
+                raise RuntimeError(
+                    "autonomous execution requires "
+                    "an EvolutionCheckpointManager"
+                )
+
+            if self._evolution_git_commit is None:
+                raise RuntimeError(
+                    "autonomous execution requires "
+                    "an EvolutionGitCommit"
+                )
+
+            if (
+                self._integration_recovery_coordinator
+                is None
+            ):
+                raise RuntimeError(
+                    "autonomous execution requires "
+                    "an integration recovery coordinator"
                 )
 
         elif integration_request is not None:
@@ -251,28 +307,64 @@ class EvolutionExecutor:
                 "at least one task"
             )
 
+        checkpoint = None
+
+        if mode is EvolutionMode.AUTONOMOUS:
+            checkpoint = (
+                self._checkpoint_manager.create(
+                    evolution_id=evolution_id,
+                    repository_path=(
+                        integration_request.repository_path
+                    ),
+                )
+            )
+
+            try:
+                self._safety_policy.validate_autonomous_execution(
+                checkpoint
+            )
+            except Exception:
+                self._checkpoint_manager.fail(
+                evolution_id
+            )
+                raise
+
         task_results = []
 
-        for task in tasks:
-            task_result = self._task_executor.execute(
-                task=task,
-                design=design,
-                plan=plan,
-                task_id=task.id,
-            )
+        try:
+            for task in tasks:
+                task_result = self._task_executor.execute(
+                    task=task,
+                    design=design,
+                    plan=plan,
+                    task_id=task.id,
+                )
 
-            task_results.append(
-                task_result
-            )
+                task_results.append(
+                    task_result
+                )
 
-            if self._failure_policy.should_stop(
-                task_result
-            ):
-                break
+                if self._failure_policy.should_stop(
+                    task_result
+                ):
+                    break
+
+        except Exception:
+            if checkpoint is not None:
+                self._checkpoint_manager.fail(
+                    evolution_id
+                )
+
+            raise
 
         if not self._policy.allows_verification(
             mode
         ):
+            if checkpoint is not None:
+                self._checkpoint_manager.fail(
+                    evolution_id
+                )
+
             raise ValueError(
                 "evolution mode does not allow "
                 "verification"
@@ -304,6 +396,102 @@ class EvolutionExecutor:
             engineering_result=engineering_result,
             task_results=task_results_tuple,
         )
+
+        if (
+            mode is EvolutionMode.AUTONOMOUS
+            and evolution_result.passed
+        ):
+            changed_paths = tuple(
+                dict.fromkeys(
+                    change.path
+                    for change in proposed_changes
+                )
+            )
+
+            if not changed_paths:
+                self._checkpoint_manager.fail(
+                    evolution_id
+                )
+
+                raise RuntimeError(
+                    "autonomous evolution produced "
+                    "no changes to commit"
+                )
+
+            try:
+                evolution_commit_hash = (
+                    self._evolution_git_commit.commit(
+                        repository_path=(
+                            integration_request.repository_path
+                        ),
+                        paths=changed_paths,
+                        message=(
+                            "evolution: "
+                            f"{request.requested_capability}"
+                        ),
+                    )
+                )
+
+                checkpoint = (
+                    self._checkpoint_manager.set_evolution_commit(
+                        evolution_id,
+                        evolution_commit_hash,
+                    )
+                )
+
+            except Exception:
+                self._checkpoint_manager.fail(
+                    evolution_id
+                )
+
+                raise
+
+        if (
+            mode is EvolutionMode.AUTONOMOUS
+            and evolution_result.passed
+        ):
+            try:
+                self._integrate(
+                    integration_request
+                )
+
+            except Exception as exc:
+                if checkpoint is not None:
+                    self._integration_recovery_coordinator.recover(
+                        checkpoint=checkpoint,
+                        reason=str(exc),
+                    )
+
+                    self._checkpoint_manager.fail(
+                        evolution_id
+                    )
+
+                completed_at = datetime.now()
+
+                history = self._history_builder.build(
+                    evolution_id=evolution_id,
+                    request=request,
+                    result=evolution_result,
+                    started_at=started_at,
+                    completed_at=completed_at,
+                    status="failed",
+                )
+
+                self._history_recorder.record(
+                    history
+                )
+
+                raise
+
+            self._checkpoint_manager.complete(
+                evolution_id
+            )
+
+        elif checkpoint is not None:
+            self._checkpoint_manager.fail(
+                evolution_id
+            )
+
         completed_at = datetime.now()
 
         history = self._history_builder.build(
@@ -322,14 +510,6 @@ class EvolutionExecutor:
         self._history_recorder.record(
             history
         )
-
-        if (
-            mode is EvolutionMode.AUTONOMOUS
-            and evolution_result.passed
-        ):
-            self._integrate(
-                integration_request
-            )
 
         return evolution_result
 
