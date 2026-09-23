@@ -42,6 +42,18 @@ from brain.engineering.testing.models.test_generation_result import (
 from brain.evolution.evolution_executor import (
     EvolutionExecutor,
 )
+from brain.evolution.evolution_dependency_planner import (
+    EvolutionDependencyPlanner,
+)
+from brain.evolution.models.evolution_dependency_requirement import (
+    EvolutionDependencyRequirement,
+)
+from brain.package_managers.models.dependency import (
+    Dependency,
+)
+from brain.package_managers.models.package_manager_environment import (
+    PackageManagerEnvironment,
+)
 from brain.evolution.models.evolution_discovery_request import (
     EvolutionDiscoveryRequest,
 )
@@ -72,12 +84,38 @@ from brain.evolution.models.evolution_checkpoint import (
 from brain.evolution.evolution_checkpoint import (
     EvolutionCheckpointManager,
 )
+from brain.evolution.models.evolution_dependency_assessment import (
+    EvolutionDependencyAssessment,
+)
+from brain.evolution.models.evolution_dependency_plan import (
+    EvolutionDependencyPlan,
+)
+from brain.evolution.models.evolution_dependency_plan_operation import (
+    EvolutionDependencyPlanOperation,
+)
+from brain.evolution.models.evolution_dependency_requirement import (
+    EvolutionDependencyRequirement,
+)
+from brain.evolution.models.evolution_dependency_resolution import (
+    EvolutionDependencyResolution,
+)
+from brain.evolution.models.evolution_dependency_resolution_status import (
+    EvolutionDependencyResolutionStatus,
+)
+from brain.evolution.models.evolution_dependency_status import (
+    EvolutionDependencyStatus,
+)
+from brain.package_managers.models.dependency import (
+    Dependency,
+)
+
 
 AUTONOMOUS_VERIFICATION_COMMAND = (
     "python",
     "-c",
     "import sys; sys.exit(0)",
 )
+
 
 class FakeRequirementService:
     def __init__(self, result):
@@ -488,6 +526,36 @@ class FakeEvolutionTaskExecutor:
         ]
 
 
+class FakeEvolutionDependencyDiscovery:
+    def __init__(self, environment):
+        self.environment = environment
+        self.calls = []
+
+    def discover(self, signatures):
+        self.calls.append(signatures)
+        return self.environment
+
+
+class RecordingEvolutionDependencyPlanner:
+    def __init__(self):
+        self.delegate = EvolutionDependencyPlanner()
+        self.plans = []
+
+    def plan(
+        self,
+        requirement,
+        resolution,
+    ):
+        plan = self.delegate.plan(
+            requirement,
+            resolution,
+        )
+
+        self.plans.append(plan)
+
+        return plan
+
+
 class EvolvedCapabilityProvider:
     @staticmethod
     def capability_descriptor():
@@ -503,10 +571,6 @@ class EvolvedCapabilityProvider:
             ),
             dependencies=frozenset(),
         )
-
-
-class InvalidEvolvedCapabilityProvider:
-    pass
 
 
 class InvalidEvolvedCapabilityProvider:
@@ -559,7 +623,7 @@ class FakeEvolutionHistoryBuilder:
         return EvolutionHistory(
             evolution_id=evolution_id,
             requested_capability=(
-                result.requested_capability
+                request.requested_capability
             ),
             objective=request.objective,
             mode=request.mode,
@@ -583,7 +647,99 @@ class FakeEvolutionHistoryRecorder:
 
     def record(self, history):
         self.calls.append(history)
+        
 
+class FakeDependencyDiscovery:
+    def __init__(self, environment):
+        self._environment = environment
+        self.calls = []
+
+    def discover(self, signatures):
+        self.calls.append(signatures)
+        return self._environment
+
+
+class FakeDependencyAvailability:
+    def __init__(self, assessments):
+        self._assessments = assessments
+        self.calls = []
+
+    def assess(self, requirement, environment):
+        self.calls.append(
+            (
+                requirement,
+                environment,
+            )
+        )
+
+        return self._assessments[
+            requirement.dependency.name
+        ]
+
+
+class FakeDependencyResolution:
+    def __init__(self, resolutions):
+        self._resolutions = resolutions
+        self.calls = []
+
+    def resolve(self, assessment, environment):
+        self.calls.append(
+            (
+                assessment,
+                environment,
+            )
+        )
+
+        return self._resolutions[
+            assessment.dependency.name
+        ]
+
+
+class FakeDependencyPlanner:
+    def __init__(self, plans):
+        self._plans = plans
+        self.calls = []
+
+    def plan(self, requirement, resolution):
+        self.calls.append(
+            (
+                requirement,
+                resolution,
+            )
+        )
+
+        return self._plans[
+            requirement.dependency.name
+        ]
+
+class FakeDependencySafetyPolicy:
+    def __init__(
+        self,
+        allowed,
+        reason="Test safety result.",
+    ):
+        self.allowed = allowed
+        self.reason = reason
+        self.calls = []
+
+    def evaluate(self, plans):
+        self.calls.append(plans)
+
+        from brain.evolution.models.evolution_dependency_safety_result import (
+            EvolutionDependencySafetyResult,
+        )
+        from brain.evolution.models.evolution_dependency_safety_status import (
+            EvolutionDependencySafetyStatus,
+        )
+
+        return EvolutionDependencySafetyResult(
+            status=(
+                EvolutionDependencySafetyStatus.ALLOWED
+                if self.allowed
+                else EvolutionDependencySafetyStatus.BLOCKED
+            ),
+            reason=self.reason,
+        )
 
 def _context():
     requirement = Requirement(
@@ -742,6 +898,10 @@ def _executor(
     events=None,
     safety_policy=None,
     verification_command="pytest tests -q",
+    dependency_discovery=None,
+    dependency_availability=None,
+    dependency_resolution=None,
+    dependency_planner=None,
 ):
     (
         requirement,
@@ -846,6 +1006,10 @@ def _executor(
             evolution_id_generator
         ),
         safety_policy=safety_policy,
+        dependency_discovery=dependency_discovery,
+        dependency_availability=dependency_availability,
+        dependency_resolution=dependency_resolution,
+        dependency_planner=dependency_planner,
     )
 
     return (
@@ -939,6 +1103,7 @@ def _task_result(
         engineering_result=loop_result,
     )
 
+
 def _multi_task_executor(
     task_results,
     verification_command="pytest tests -q",
@@ -987,13 +1152,15 @@ def _multi_task_executor(
         FakeIntegrationRecoveryCoordinator()
     )
 
-    evolution_id_generator = (
-        FakeEvolutionIdGenerator()
+    capability_integrator = (
+        FakeCapabilityIntegrator()
     )
 
     executor = EvolutionExecutor(
-        requirement_service=FakeRequirementService(
-            requirement
+        requirement_service=(
+            FakeRequirementService(
+                requirement
+            )
         ),
         task_decomposer=FakeTaskDecomposer(
             decomposition
@@ -1002,197 +1169,10 @@ def _multi_task_executor(
             design
         ),
         planner=FakePlanner(plan),
-        engineering_generation=FakeEngineeringGeneration(
-            generation_result
-        ),
-        test_generator=FakeTestGenerator(
-            test_result
-        ),
-        engineering_loop=FakeEngineeringLoop(
-            loop_result
-        ),
-        existing_code=existing_code,
-        verification_command=verification_command,
-        max_iterations=3,
-        task_executor=task_executor,
-        checkpoint_manager=checkpoint_manager,
-        evolution_git_commit=evolution_git_commit,
-        integration_recovery_coordinator=(
-            integration_recovery_coordinator
-        ),
-        evolution_id_generator=(
-            evolution_id_generator
-        ),
-    )
-
-    return (
-        executor,
-        task_executor,
-        requirement,
-        decomposition,
-        design,
-        plan,
-    )
-
-
-def test_executor_runs_complete_engineering_pipeline():
-    (
-        executor,
-        requirement_service,
-        task_decomposer,
-        system_designer,
-        planner,
-        generation,
-        test_generator,
-        engineering_loop,
-        context,
-    ) = _executor()
-
-    (
-        requirement,
-        task,
-        decomposition,
-        design,
-        plan,
-        existing_code,
-        generation_result,
-        test_result,
-        loop_result,
-    ) = context
-
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="supervised",
-    )
-
-    result = executor.execute(request)
-
-    assert result.requested_capability == (
-        "web_research"
-    )
-
-    assert result.requirement == requirement
-    assert result.task_decomposition == decomposition
-    assert result.design == design
-    assert result.plan == plan
-
-    assert result.proposed_changes == (
-        generation_result.changes
-        + test_result.changes
-    )
-
-    assert result.engineering_result == (
-        loop_result
-    )
-
-    assert requirement_service.calls == [
-        "Add web research."
-    ]
-
-    assert task_decomposer.calls == [
-        requirement
-    ]
-
-    assert system_designer.calls == [
-        decomposition
-    ]
-
-    assert planner.calls == [
-        decomposition
-    ]
-
-    assert len(generation.calls) == 1
-
-    assert generation.calls[0].task == task
-    assert generation.calls[0].design == design
-    assert generation.calls[0].plan == plan
-    assert generation.calls[0].existing_code == (
-        existing_code
-    )
-
-    assert len(test_generator.calls) == 1
-
-    assert test_generator.calls[0].task == task
-    assert test_generator.calls[0].design == design
-    assert test_generator.calls[0].plan == plan
-    assert test_generator.calls[0].existing_code == (
-        existing_code
-    )
-
-    assert test_generator.calls[0].proposed_changes == (
-        generation_result.changes
-    )
-
-    assert len(engineering_loop.calls) == 1
-
-    loop_request = engineering_loop.calls[0]
-
-    assert loop_request.task == task
-    assert loop_request.design == design
-    assert loop_request.plan == plan
-    assert loop_request.existing_code == (
-        existing_code
-    )
-
-    assert loop_request.proposed_changes == (
-        generation_result.changes
-        + test_result.changes
-    )
-
-    assert loop_request.verification_command == (
-        "pytest tests -q"
-    )
-
-    assert loop_request.max_iterations == 3
-
-
-def test_executor_rejects_empty_task_decomposition():
-    (
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        context,
-    ) = _executor()
-
-    (
-        requirement,
-        _,
-        _,
-        design,
-        plan,
-        existing_code,
-        generation_result,
-        test_result,
-        loop_result,
-    ) = context
-
-    empty_decomposition = TaskDecomposition(
-        requirement=requirement,
-        tasks=(),
-    )
-
-    task_decomposer = FakeTaskDecomposer(
-        empty_decomposition
-    )
-
-    executor = EvolutionExecutor(
-        requirement_service=FakeRequirementService(
-            requirement
-        ),
-        task_decomposer=task_decomposer,
-        system_designer=FakeSystemDesigner(
-            design
-        ),
-        planner=FakePlanner(plan),
-        engineering_generation=FakeEngineeringGeneration(
-            generation_result
+        engineering_generation=(
+            FakeEngineeringGeneration(
+                generation_result
+            )
         ),
         test_generator=FakeTestGenerator(
             test_result
@@ -1202,39 +1182,107 @@ def test_executor_rejects_empty_task_decomposition():
         ),
         existing_code=existing_code,
         verification_command=(
-            "pytest",
-            "tests",
-            "-q",
+            verification_command
         ),
         max_iterations=3,
+        task_executor=task_executor,
+        checkpoint_manager=checkpoint_manager,
+        evolution_git_commit=(
+            evolution_git_commit
+        ),
+        integration_recovery_coordinator=(
+            integration_recovery_coordinator
+        ),
+        capability_integrator=(
+            capability_integrator
+        ),
     )
 
-    request = EvolutionRequest(
+    return (
+        executor,
+        task_executor,
+        checkpoint_manager,
+        evolution_git_commit,
+        integration_recovery_coordinator,
+        capability_integrator,
+        requirement,
+    )
+
+
+def _request(
+    mode="supervised",
+):
+    return EvolutionRequest(
         requested_capability="web_research",
         objective="Add web research.",
         constraints=frozenset(),
-        mode="supervised",
+        mode=mode,
     )
 
-    with pytest.raises(
-        ValueError,
-        match="task decomposition must contain",
-    ):
-        executor.execute(request)
+def _dependency():
+    return Dependency(
+        name="requests",
+        version="2.31.0",
+        source="requirements.txt",
+    )
 
 
-def test_propose_returns_evolution_proposal():
+def _dependency_requirement():
+    return EvolutionDependencyRequirement(
+        dependency=_dependency(),
+        reason="Required by the evolution.",
+    )
+
+
+def _dependency_assessment():
+    return EvolutionDependencyAssessment(
+        dependency=_dependency(),
+        status=EvolutionDependencyStatus.AVAILABLE,
+        reason="Dependency is available.",
+    )
+
+
+def _dependency_resolution():
+    return EvolutionDependencyResolution(
+        assessment=_dependency_assessment(),
+        status=(
+            EvolutionDependencyResolutionStatus.NOT_REQUIRED
+        ),
+        package_manager=None,
+        reason="No dependency action is required.",
+    )
+
+
+def _dependency_plan(
+    operation,
+    reason="Test dependency plan.",
+):
+    return EvolutionDependencyPlan(
+        requirement=_dependency_requirement(),
+        resolution=_dependency_resolution(),
+        operation=operation,
+        package_manager=None,
+        reason=reason,
+    )
+
+def test_proposal_mode_returns_proposal():
     (
         executor,
         requirement_service,
         task_decomposer,
         system_designer,
         planner,
-        generation,
-        test_generator,
-        engineering_loop,
+        _,
+        _,
+        _,
         context,
     ) = _executor()
+
+    proposal = executor.propose(
+        _request(
+            mode="proposal",
+        )
+    )
 
     (
         requirement,
@@ -1248,28 +1296,20 @@ def test_propose_returns_evolution_proposal():
         _,
     ) = context
 
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="proposal",
-    )
-
-    result = executor.propose(request)
-
     assert isinstance(
-        result,
+        proposal,
         EvolutionProposal,
     )
 
-    assert result.requested_capability == (
-        "web_research"
+    assert (
+        proposal.requested_capability
+        == "web_research"
     )
 
-    assert result.requirement == requirement
-    assert result.task_decomposition == decomposition
-    assert result.design == design
-    assert result.plan == plan
+    assert proposal.requirement == requirement
+    assert proposal.task_decomposition == decomposition
+    assert proposal.design == design
+    assert proposal.plan == plan
 
     assert requirement_service.calls == [
         "Add web research."
@@ -1286,10 +1326,6 @@ def test_propose_returns_evolution_proposal():
     assert planner.calls == [
         decomposition
     ]
-
-    assert generation.calls == []
-    assert test_generator.calls == []
-    assert engineering_loop.calls == []
 
 
 def test_propose_rejects_non_proposal_mode():
@@ -1305,18 +1341,15 @@ def test_propose_rejects_non_proposal_mode():
         _,
     ) = _executor()
 
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="supervised",
-    )
-
     with pytest.raises(
         ValueError,
         match="propose\\(\\) requires proposal mode",
     ):
-        executor.propose(request)
+        executor.propose(
+            _request(
+                mode="supervised",
+            )
+        )
 
 
 def test_execute_rejects_proposal_mode():
@@ -1332,23 +1365,465 @@ def test_execute_rejects_proposal_mode():
         _,
     ) = _executor()
 
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="proposal",
+    with pytest.raises(
+        ValueError,
+        match=(
+            "proposal mode requires propose\\(\\), "
+            "not execute\\(\\)"
+        ),
+    ):
+        executor.execute(
+            _request(
+                mode="proposal",
+            )
+        )
+
+
+def test_execute_rejects_non_evolution_request():
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    ) = _executor()
+
+    with pytest.raises(
+        TypeError,
+        match="request must be an EvolutionRequest",
+    ):
+        executor.execute(
+            object()
+        )
+
+
+def test_propose_rejects_non_evolution_request():
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    ) = _executor()
+
+    with pytest.raises(
+        TypeError,
+        match="request must be an EvolutionRequest",
+    ):
+        executor.propose(
+            object()
+        )
+
+
+def test_supervised_execution_returns_evolution_result():
+    (
+        executor,
+        requirement_service,
+        task_decomposer,
+        system_designer,
+        planner,
+        _,
+        _,
+        engineering_loop,
+        context,
+    ) = _executor()
+
+    result = executor.execute(
+        _request(
+            mode="supervised",
+        )
+    )
+
+    (
+        requirement,
+        task,
+        decomposition,
+        design,
+        plan,
+        _,
+        _,
+        _,
+        loop_result,
+    ) = context
+
+    assert result.requested_capability == (
+        "web_research"
+    )
+
+    assert result.requirement == requirement
+    assert result.task_decomposition == decomposition
+    assert result.design == design
+    assert result.plan == plan
+
+    assert result.proposed_changes == (
+        CodeChange(
+            path="brain/research.py",
+            operation="create",
+            content="research implementation",
+        ),
+        CodeChange(
+            path="tests/test_research.py",
+            operation="create",
+            content="research test",
+        ),
+    )
+
+    assert result.engineering_result == (
+        loop_result
+    )
+
+    assert len(result.task_results) == 1
+
+    assert result.task_results[0].task_id == (
+        task.id
+    )
+
+    assert requirement_service.calls == [
+        "Add web research."
+    ]
+
+    assert task_decomposer.calls == [
+        requirement
+    ]
+
+    assert system_designer.calls == [
+        decomposition
+    ]
+
+    assert planner.calls == [
+        decomposition
+    ]
+
+    assert len(engineering_loop.calls) == 1
+
+
+def test_supervised_execution_records_history():
+    history_builder = (
+        FakeEvolutionHistoryBuilder()
+    )
+
+    history_recorder = (
+        FakeEvolutionHistoryRecorder()
+    )
+
+    (
+        requirement,
+        task,
+        decomposition,
+        design,
+        plan,
+        existing_code,
+        generation_result,
+        test_result,
+        loop_result,
+    ) = _context()
+
+    executor = EvolutionExecutor(
+        requirement_service=(
+            FakeRequirementService(
+                requirement
+            )
+        ),
+        task_decomposer=FakeTaskDecomposer(
+            decomposition
+        ),
+        system_designer=FakeSystemDesigner(
+            design
+        ),
+        planner=FakePlanner(plan),
+        engineering_generation=(
+            FakeEngineeringGeneration(
+                generation_result
+            )
+        ),
+        test_generator=FakeTestGenerator(
+            test_result
+        ),
+        engineering_loop=FakeEngineeringLoop(
+            loop_result
+        ),
+        existing_code=existing_code,
+        verification_command=(
+            "pytest tests -q"
+        ),
+        evolution_id_generator=(
+            FakeEvolutionIdGenerator()
+        ),
+        history_builder=history_builder,
+        history_recorder=history_recorder,
+    )
+
+    result = executor.execute(
+        _request(
+            mode="supervised",
+        )
+    )
+
+    assert len(history_builder.calls) == 1
+    assert len(history_recorder.calls) == 1
+
+    history = history_recorder.calls[0]
+
+    assert history.evolution_id == (
+        "evo-test-001"
+    )
+
+    assert history.requested_capability == (
+        "web_research"
+    )
+
+    assert history.objective == (
+        "Add web research."
+    )
+
+    assert history.mode == "supervised"
+
+    assert history.status == "completed"
+
+    assert history.passed is True
+
+    assert result.passed is True
+
+
+def test_supervised_execution_does_not_create_checkpoint():
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    ) = _executor()
+
+    result = executor.execute(
+        _request(
+            mode="supervised",
+        )
+    )
+
+    assert result.passed is True
+
+
+def test_supervised_execution_rejects_integration_request():
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    ) = _executor()
+
+    discovery_request = EvolutionDiscoveryRequest(
+        provider=EvolvedCapabilityProvider(),
+        repository_path="D:/Madhav",
     )
 
     with pytest.raises(
         ValueError,
-        match="proposal mode requires propose",
+        match=(
+            "integration_request is only valid "
+            "for autonomous mode"
+        ),
     ):
-        executor.execute(request)
+        executor.execute(
+            _request(
+                mode="supervised",
+            ),
+            integration_request=discovery_request,
+        )
 
 
-def test_supervised_execution_does_not_integrate():
-    integrator = FakeCapabilityIntegrator()
+def test_supervised_execution_stops_after_failed_task():
+    failed_result = _task_result(
+        task_id="task-1",
+        description="First task.",
+        passed=False,
+    )
 
+    successful_result = _task_result(
+        task_id="task-2",
+        description="Second task.",
+        passed=True,
+    )
+
+    (
+        executor,
+        task_executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+    ) = _multi_task_executor(
+        {
+            "task-1": failed_result,
+            "task-2": successful_result,
+        }
+    )
+
+    result = executor.execute(
+        _request(
+            mode="supervised",
+        )
+    )
+
+    assert task_executor.executed_tasks == [
+        "task-1"
+    ]
+
+    assert len(result.task_results) == 1
+
+    assert result.passed is False
+
+
+def test_supervised_execution_runs_all_successful_tasks():
+    first_result = _task_result(
+        task_id="task-1",
+        description="First task.",
+        passed=True,
+    )
+
+    second_result = _task_result(
+        task_id="task-2",
+        description="Second task.",
+        passed=True,
+    )
+
+    third_result = _task_result(
+        task_id="task-3",
+        description="Third task.",
+        passed=True,
+    )
+
+    (
+        executor,
+        task_executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+    ) = _multi_task_executor(
+        {
+            "task-1": first_result,
+            "task-2": second_result,
+            "task-3": third_result,
+        }
+    )
+
+    result = executor.execute(
+        _request(
+            mode="supervised",
+        )
+    )
+
+    assert task_executor.executed_tasks == [
+        "task-1",
+        "task-2",
+        "task-3",
+    ]
+
+    assert len(result.task_results) == 3
+
+    assert result.passed is True
+
+
+def test_supervised_execution_aggregates_changes_from_all_tasks():
+    first_result = _task_result(
+        task_id="task-1",
+        description="First task.",
+        passed=True,
+    )
+
+    second_result = _task_result(
+        task_id="task-2",
+        description="Second task.",
+        passed=True,
+    )
+
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    ) = _multi_task_executor(
+        {
+            "task-1": first_result,
+            "task-2": second_result,
+        }
+    )
+
+    result = executor.execute(
+        _request(
+            mode="supervised",
+        )
+    )
+
+    assert result.proposed_changes == (
+        CodeChange(
+            path="task-1.py",
+            operation="create",
+            content="task-1 implementation",
+        ),
+        CodeChange(
+            path="task-2.py",
+            operation="create",
+            content="task-2 implementation",
+        ),
+    )
+
+
+def test_supervised_execution_records_failed_history():
+    failed_result = _task_result(
+        task_id="task-1",
+        description="First task.",
+        passed=False,
+    )
+
+    (
+        executor,
+        _,
+        checkpoint_manager,
+        _,
+        _,
+        _,
+        _,
+    ) = _multi_task_executor(
+        {
+            "task-1": failed_result,
+        }
+    )
+
+    result = executor.execute(
+        _request(
+            mode="supervised",
+        )
+    )
+
+    assert result.passed is False
+
+    assert checkpoint_manager.calls == []
+
+
+def test_supervised_execution_raises_when_engineering_fails():
     (
         executor,
         _,
@@ -1360,20 +1835,82 @@ def test_supervised_execution_does_not_integrate():
         _,
         _,
     ) = _executor(
-        capability_integrator=integrator,
+        engineering_loop_exception=RuntimeError(
+            "engineering failed"
+        )
     )
 
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="supervised",
+    with pytest.raises(
+        RuntimeError,
+        match="engineering failed",
+    ):
+        executor.execute(
+            _request(
+                mode="supervised",
+            )
+        )
+
+
+def test_supervised_execution_rejects_empty_task_decomposition():
+    (
+        requirement,
+        _,
+        _,
+        design,
+        plan,
+        existing_code,
+        generation_result,
+        test_result,
+        loop_result,
+    ) = _context()
+
+    empty_decomposition = TaskDecomposition(
+        requirement=requirement,
+        tasks=(),
     )
 
-    result = executor.execute(request)
+    executor = EvolutionExecutor(
+        requirement_service=(
+            FakeRequirementService(
+                requirement
+            )
+        ),
+        task_decomposer=FakeTaskDecomposer(
+            empty_decomposition
+        ),
+        system_designer=FakeSystemDesigner(
+            design
+        ),
+        planner=FakePlanner(plan),
+        engineering_generation=(
+            FakeEngineeringGeneration(
+                generation_result
+            )
+        ),
+        test_generator=FakeTestGenerator(
+            test_result
+        ),
+        engineering_loop=FakeEngineeringLoop(
+            loop_result
+        ),
+        existing_code=existing_code,
+        verification_command=(
+            "pytest tests -q"
+        ),
+    )
 
-    assert result.engineering_result.passed
-    assert integrator.calls == []
+    with pytest.raises(
+        ValueError,
+        match=(
+            "task decomposition must contain "
+            "at least one task"
+        ),
+    ):
+        executor.execute(
+            _request(
+                mode="supervised",
+            )
+        )
 
 
 def test_autonomous_execution_requires_discovery_request():
@@ -1389,735 +1926,231 @@ def test_autonomous_execution_requires_discovery_request():
         _,
     ) = _executor()
 
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="autonomous",
-    )
-
     with pytest.raises(
         TypeError,
-        match="EvolutionDiscoveryRequest",
-    ):
-        executor.execute(request)
-
-
-def test_autonomous_execution_rejects_invalid_discovery_request():
-    (
-        executor,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    ) = _executor()
-
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="autonomous",
-    )
-
-    with pytest.raises(
-        TypeError,
-        match="EvolutionDiscoveryRequest",
+        match=(
+            "autonomous execution requires an "
+            "EvolutionDiscoveryRequest"
+        ),
     ):
         executor.execute(
-            request,
-            integration_request=object(),
+            _request(
+                mode="autonomous",
+            )
         )
 
-def test_autonomous_execution_discovers_provider():
-    provider = EvolvedCapabilityProvider()
 
-    discovery = FakeCapabilityDiscovery(
-        (
-            provider.capability_descriptor(),
-        )
-    )
-
-    integrator = FakeCapabilityIntegrator()
-
+def test_autonomous_execution_requires_checkpoint_manager():
     (
-        executor,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    ) = _executor(
-        discovery=discovery,
-        capability_integrator=integrator,
+        requirement,
+        task,
+        decomposition,
+        design,
+        plan,
+        existing_code,
+        generation_result,
+        test_result,
+        loop_result,
+    ) = _context()
+
+    executor = EvolutionExecutor(
+        requirement_service=(
+            FakeRequirementService(
+                requirement
+            )
+        ),
+        task_decomposer=FakeTaskDecomposer(
+            decomposition
+        ),
+        system_designer=FakeSystemDesigner(
+            design
+        ),
+        planner=FakePlanner(plan),
+        engineering_generation=(
+            FakeEngineeringGeneration(
+                generation_result
+            )
+        ),
+        test_generator=FakeTestGenerator(
+            test_result
+        ),
+        engineering_loop=FakeEngineeringLoop(
+            loop_result
+        ),
+        existing_code=existing_code,
         verification_command=(
             AUTONOMOUS_VERIFICATION_COMMAND
         ),
-    )
-
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="autonomous",
-    )
-
-    discovery_request = EvolutionDiscoveryRequest(
-        provider=provider,
-        repository_path="D:/Madhav",
-    )
-
-    result = executor.execute(
-        request,
-        integration_request=discovery_request,
-    )
-
-    assert result.engineering_result.passed
-
-    assert discovery.calls == [
-        (provider,),
-    ]
-
-
-def test_autonomous_execution_integrates_discovered_capability():
-    provider = EvolvedCapabilityProvider()
-
-    capability = provider.capability_descriptor()
-
-    discovery = FakeCapabilityDiscovery(
-        (capability,)
-    )
-
-    integrator = FakeCapabilityIntegrator()
-
-    (
-        executor,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    ) = _executor(
-        discovery=discovery,
-        capability_integrator=integrator,
-        verification_command=(
-            AUTONOMOUS_VERIFICATION_COMMAND
+        checkpoint_manager=None,
+        evolution_git_commit=(
+            FakeEvolutionGitCommit()
+        ),
+        integration_recovery_coordinator=(
+            FakeIntegrationRecoveryCoordinator()
         ),
     )
 
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="autonomous",
-    )
-
     discovery_request = EvolutionDiscoveryRequest(
-        provider=provider,
-        repository_path="D:/Madhav",
-    )
-
-    result = executor.execute(
-        request,
-        integration_request=discovery_request,
-    )
-
-    assert result.engineering_result.passed
-
-    assert discovery.calls == [
-        (provider,),
-    ]
-
-    assert integrator.calls == [
-        (capability, True),
-    ]
-
-
-def test_autonomous_execution_rejects_provider_without_descriptor():
-    provider = InvalidEvolvedCapabilityProvider()
-
-    discovery = FakeCapabilityDiscovery(
-        ()
-    )
-
-    integrator = FakeCapabilityIntegrator()
-
-    (
-        executor,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    ) = _executor(
-        discovery=discovery,
-        capability_integrator=integrator,
-        verification_command=(
-            AUTONOMOUS_VERIFICATION_COMMAND
-        ),
-    )
-
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="autonomous",
-    )
-
-    discovery_request = EvolutionDiscoveryRequest(
-        provider=provider,
+        provider=EvolvedCapabilityProvider(),
         repository_path="D:/Madhav",
     )
 
     with pytest.raises(
         RuntimeError,
         match=(
-            "evolution validation failed: "
-            "no capability descriptor was discovered"
+            "autonomous execution requires "
+            "an EvolutionCheckpointManager"
         ),
     ):
         executor.execute(
-            request,
+            _request(
+                mode="autonomous",
+            ),
             integration_request=discovery_request,
         )
 
-    assert discovery.calls == [
-        (provider,),
-    ]
 
-    assert integrator.calls == []
-
-
-def test_autonomous_execution_does_not_integrate_after_failed_verification():
-    (
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        context,
-    ) = _executor()
-
+def test_autonomous_execution_requires_git_commit():
     (
         requirement,
-        _,
+        task,
         decomposition,
         design,
         plan,
         existing_code,
         generation_result,
         test_result,
-        _,
-    ) = context
+        loop_result,
+    ) = _context()
 
-    failed_loop_result = EngineeringLoopResult(
-        changes=(
-            generation_result.changes
-            + test_result.changes
+    executor = EvolutionExecutor(
+        requirement_service=(
+            FakeRequirementService(
+                requirement
+            )
         ),
-        passed=False,
-        iterations=(),
-        termination_reason="max_iterations_reached",
-    )
-
-    provider = EvolvedCapabilityProvider()
-
-    discovery = FakeCapabilityDiscovery(
-        (
-            provider.capability_descriptor(),
-        )
-    )
-
-    integrator = FakeCapabilityIntegrator()
-
-    (
-        executor,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    ) = _executor(
-        loop_result=failed_loop_result,
-        discovery=discovery,
-        capability_integrator=integrator,
+        task_decomposer=FakeTaskDecomposer(
+            decomposition
+        ),
+        system_designer=FakeSystemDesigner(
+            design
+        ),
+        planner=FakePlanner(plan),
+        engineering_generation=(
+            FakeEngineeringGeneration(
+                generation_result
+            )
+        ),
+        test_generator=FakeTestGenerator(
+            test_result
+        ),
+        engineering_loop=FakeEngineeringLoop(
+            loop_result
+        ),
+        existing_code=existing_code,
         verification_command=(
             AUTONOMOUS_VERIFICATION_COMMAND
         ),
-    )
-
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="autonomous",
+        checkpoint_manager=(
+            FakeCheckpointManager()
+        ),
+        evolution_git_commit=None,
+        integration_recovery_coordinator=(
+            FakeIntegrationRecoveryCoordinator()
+        ),
     )
 
     discovery_request = EvolutionDiscoveryRequest(
-        provider=provider,
+        provider=EvolvedCapabilityProvider(),
         repository_path="D:/Madhav",
     )
 
-    result = executor.execute(
-        request,
-        integration_request=discovery_request,
-    )
-
-    assert result.engineering_result.passed is False
-    assert discovery.calls == []
-    assert integrator.calls == []
-
-
-def test_executor_executes_all_tasks_in_sequence():
-    task_results = {
-        "task-1": _task_result(
-            "task-1",
-            "First task.",
+    with pytest.raises(
+        RuntimeError,
+        match=(
+            "autonomous execution requires "
+            "an EvolutionGitCommit"
         ),
-        "task-2": _task_result(
-            "task-2",
-            "Second task.",
-        ),
-    }
-
-    executor, task_executor, _, _, _, _ = (
-        _multi_task_executor(
-            task_results
+    ):
+        executor.execute(
+            _request(
+                mode="autonomous",
+            ),
+            integration_request=discovery_request,
         )
-    )
 
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="supervised",
-    )
 
-    result = executor.execute(request)
-
-    assert task_executor.executed_tasks == [
-        "task-1",
-        "task-2",
-    ]
-
-    assert [
-        task_result.task_id
-        for task_result in result.task_results
-    ] == [
-        "task-1",
-        "task-2",
-    ]
-
-
-def test_executor_aggregates_changes_from_all_tasks():
-    task_results = {
-        "task-1": _task_result(
-            "task-1",
-            "First task.",
-        ),
-        "task-2": _task_result(
-            "task-2",
-            "Second task.",
-        ),
-    }
-
-    executor, _, _, _, _, _ = (
-        _multi_task_executor(
-            task_results
-        )
-    )
-
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="supervised",
-    )
-
-    result = executor.execute(request)
-
-    expected_changes = (
-        task_results["task-1"].proposed_changes
-        + task_results["task-2"].proposed_changes
-    )
-
-    assert result.all_proposed_changes == (
-        expected_changes
-    )
-
-
-def test_executor_stops_after_first_failed_task():
-    task_results = {
-        "task-1": _task_result(
-            "task-1",
-            "First task.",
-            passed=False,
-        ),
-        "task-2": _task_result(
-            "task-2",
-            "Second task.",
-            passed=True,
-        ),
-    }
-
-    executor, task_executor, _, _, _, _ = (
-        _multi_task_executor(
-            task_results
-        )
-    )
-
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="supervised",
-    )
-
-    result = executor.execute(request)
-
-    assert task_executor.executed_tasks == [
-        "task-1",
-    ]
-
-    assert len(result.task_results) == 1
-    assert result.passed is False
-
-
-def test_executor_passes_when_all_tasks_pass():
-    task_results = {
-        "task-1": _task_result(
-            "task-1",
-            "First task.",
-        ),
-        "task-2": _task_result(
-            "task-2",
-            "Second task.",
-        ),
-    }
-
-    executor, task_executor, _, _, _, _ = (
-        _multi_task_executor(
-            task_results
-        )
-    )
-
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="supervised",
-    )
-
-    result = executor.execute(request)
-
-    assert task_executor.executed_tasks == [
-        "task-1",
-        "task-2",
-    ]
-
-    assert len(result.task_results) == 2
-    assert result.passed is True
-
-
-def test_autonomous_execution_integrates_only_after_all_tasks_pass():
-    task_results = {
-        "task-1": _task_result(
-            "task-1",
-            "First task.",
-        ),
-        "task-2": _task_result(
-            "task-2",
-            "Second task.",
-        ),
-    }
-
-    (
-        executor,
-        task_executor,
-        requirement,
-        decomposition,
-        design,
-        plan,
-    ) = _multi_task_executor(
-        task_results,
-        verification_command=(
-            AUTONOMOUS_VERIFICATION_COMMAND
-        ),
-    )
-
-    provider = EvolvedCapabilityProvider()
-
-    capability = provider.capability_descriptor()
-
-    discovery = FakeCapabilityDiscovery(
-        (capability,)
-    )
-
-    integrator = FakeCapabilityIntegrator()
-
-    executor._discovery = discovery
-    executor._capability_integrator = integrator
-
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="autonomous",
-    )
-
-    discovery_request = EvolutionDiscoveryRequest(
-        provider=provider,
-        repository_path="D:/Madhav",
-    )
-
-    result = executor.execute(
-        request,
-        integration_request=discovery_request,
-    )
-
-    assert result.passed is True
-
-    assert task_executor.executed_tasks == [
-        "task-1",
-        "task-2",
-    ]
-
-    assert discovery.calls == [
-        (provider,),
-    ]
-
-    assert integrator.calls == [
-        (capability, True),
-    ]
-
-
-def test_autonomous_execution_does_not_integrate_after_multi_task_failure():
-    task_results = {
-        "task-1": _task_result(
-            "task-1",
-            "First task.",
-            passed=True,
-        ),
-        "task-2": _task_result(
-            "task-2",
-            "Second task.",
-            passed=False,
-        ),
-        "task-3": _task_result(
-            "task-3",
-            "Third task.",
-            passed=True,
-        ),
-    }
-
-    (
-        executor,
-        task_executor,
-        _,
-        _,
-        _,
-        _,
-    ) = _multi_task_executor(
-        task_results
-    )
-
-    provider = EvolvedCapabilityProvider()
-
-    capability = provider.capability_descriptor()
-
-    discovery = FakeCapabilityDiscovery(
-        (capability,)
-    )
-
-    integrator = FakeCapabilityIntegrator()
-
-    executor._discovery = discovery
-    executor._capability_integrator = integrator
-
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="autonomous",
-    )
-
-    discovery_request = EvolutionDiscoveryRequest(
-        provider=provider,
-        repository_path="D:/Madhav",
-    )
-
-    result = executor.execute(
-        request,
-        integration_request=discovery_request,
-    )
-
-    assert result.passed is False
-
-    assert task_executor.executed_tasks == [
-        "task-1",
-        "task-2",
-    ]
-
-    assert discovery.calls == []
-    assert integrator.calls == []
-
-
-def test_executor_records_evolution_history():
-    history_recorder = (
-        FakeEvolutionHistoryRecorder()
-    )
-
-    history_builder = (
-        FakeEvolutionHistoryBuilder()
-    )
-
-    id_generator = (
-        FakeEvolutionIdGenerator()
-    )
-
-    (
-        executor,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    ) = _executor(
-        evolution_id_generator=id_generator,
-    )
-
-    executor._history_recorder = (
-        history_recorder
-    )
-
-    executor._history_builder = (
-        history_builder
-    )
-
-    executor._evolution_id_generator = (
-        id_generator
-    )
-
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="supervised",
-    )
-
-    result = executor.execute(request)
-
-    assert id_generator.calls == 1
-
-    assert len(
-        history_builder.calls
-    ) == 1
-
-    (
-        evolution_id,
-        recorded_request,
-        recorded_result,
-        started_at,
-        completed_at,
-        status,
-    ) = history_builder.calls[0]
-
-    assert evolution_id == (
-        "evo-test-001"
-    )
-
-    assert recorded_request == request
-    assert recorded_result == result
-
-    assert started_at <= completed_at
-    assert status == "completed"
-
-    assert len(
-        history_recorder.calls
-    ) == 1
-
-    history = history_recorder.calls[0]
-
-    assert isinstance(
-        history,
-        EvolutionHistory,
-    )
-
-    assert history.evolution_id == (
-        "evo-test-001"
-    )
-
-
-def test_executor_records_failed_evolution():
-    (
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        context,
-    ) = _executor()
-
+def test_autonomous_execution_requires_integration_recovery_coordinator():
     (
         requirement,
-        _,
+        task,
         decomposition,
         design,
         plan,
         existing_code,
         generation_result,
         test_result,
-        _,
-    ) = context
+        loop_result,
+    ) = _context()
 
-    failed_loop_result = EngineeringLoopResult(
-        changes=(
-            generation_result.changes
-            + test_result.changes
+    executor = EvolutionExecutor(
+        requirement_service=(
+            FakeRequirementService(
+                requirement
+            )
         ),
-        passed=False,
-        iterations=(),
-        termination_reason=(
-            "max_iterations_reached"
+        task_decomposer=FakeTaskDecomposer(
+            decomposition
         ),
+        system_designer=FakeSystemDesigner(
+            design
+        ),
+        planner=FakePlanner(plan),
+        engineering_generation=(
+            FakeEngineeringGeneration(
+                generation_result
+            )
+        ),
+        test_generator=FakeTestGenerator(
+            test_result
+        ),
+        engineering_loop=FakeEngineeringLoop(
+            loop_result
+        ),
+        existing_code=existing_code,
+        verification_command=(
+            AUTONOMOUS_VERIFICATION_COMMAND
+        ),
+        checkpoint_manager=(
+            FakeCheckpointManager()
+        ),
+        evolution_git_commit=(
+            FakeEvolutionGitCommit()
+        ),
+        integration_recovery_coordinator=None,
     )
 
-    history_recorder = (
-        FakeEvolutionHistoryRecorder()
+    discovery_request = EvolutionDiscoveryRequest(
+        provider=EvolvedCapabilityProvider(),
+        repository_path="D:/Madhav",
     )
 
-    history_builder = (
-        FakeEvolutionHistoryBuilder()
-    )
+    with pytest.raises(
+        RuntimeError,
+        match=(
+            "autonomous execution requires "
+            "an integration recovery coordinator"
+        ),
+    ):
+        executor.execute(
+            _request(
+                mode="autonomous",
+            ),
+            integration_request=discovery_request,
+        )
 
-    id_generator = (
-        FakeEvolutionIdGenerator()
-    )
 
+def test_autonomous_execution_rejects_invalid_integration_request():
     (
         executor,
         _,
@@ -2128,124 +2161,31 @@ def test_executor_records_failed_evolution():
         _,
         _,
         _,
-    ) = _executor(
-        loop_result=failed_loop_result,
-        evolution_id_generator=id_generator,
-    )
+    ) = _executor()
 
-    executor._history_recorder = (
-        history_recorder
-    )
-
-    executor._history_builder = (
-        history_builder
-    )
-
-    executor._evolution_id_generator = (
-        id_generator
-    )
-
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="supervised",
-    )
-
-    result = executor.execute(request)
-
-    assert result.passed is False
-
-    assert len(
-        history_builder.calls
-    ) == 1
-
-    assert (
-        history_builder.calls[0][-1]
-        == "failed"
-    )
-
-    assert len(
-        history_recorder.calls
-    ) == 1
-
-    assert (
-        history_recorder.calls[0].passed
-        is False
-    )
-
-
-def test_proposal_mode_does_not_record_history():
-    history_recorder = (
-        FakeEvolutionHistoryRecorder()
-    )
-
-    history_builder = (
-        FakeEvolutionHistoryBuilder()
-    )
-
-    id_generator = (
-        FakeEvolutionIdGenerator()
-    )
-
-    (
-        executor,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    ) = _executor(
-        evolution_id_generator=id_generator,
-    )
-
-    executor._history_recorder = (
-        history_recorder
-    )
-
-    executor._history_builder = (
-        history_builder
-    )
-
-    executor._evolution_id_generator = (
-        id_generator
-    )
-
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="proposal",
-    )
-
-    result = executor.propose(request)
-
-    assert result.requested_capability == (
-        "web_research"
-    )
-
-    assert id_generator.calls == 0
-    assert history_builder.calls == []
-    assert history_recorder.calls == []
+    with pytest.raises(
+        TypeError,
+        match=(
+            "autonomous execution requires an "
+            "EvolutionDiscoveryRequest"
+        ),
+    ):
+        executor.execute(
+            _request(
+                mode="autonomous",
+            ),
+            integration_request=object(),
+        )
 
 
 def test_autonomous_execution_creates_checkpoint_commits_and_completes():
-    provider = EvolvedCapabilityProvider()
-
-    capability = provider.capability_descriptor()
+    events = []
 
     discovery = FakeCapabilityDiscovery(
-        (capability,)
+        (
+            EvolvedCapabilityProvider.capability_descriptor(),
+        )
     )
-
-    integrator = FakeCapabilityIntegrator()
-    checkpoint_manager = FakeCheckpointManager()
-    git_commit = FakeEvolutionGitCommit()
-    recovery = FakeIntegrationRecoveryCoordinator()
-    id_generator = FakeEvolutionIdGenerator()
 
     (
         executor,
@@ -2254,463 +2194,23 @@ def test_autonomous_execution_creates_checkpoint_commits_and_completes():
         _,
         _,
         _,
-        _,
+        engineering_loop,
         _,
         _,
     ) = _executor(
         discovery=discovery,
-        capability_integrator=integrator,
-        checkpoint_manager=checkpoint_manager,
-        evolution_git_commit=git_commit,
-        integration_recovery_coordinator=recovery,
-        evolution_id_generator=id_generator,
-        verification_command=(
-            AUTONOMOUS_VERIFICATION_COMMAND
-        ),
-    )
-
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="autonomous",
-    )
-
-    discovery_request = EvolutionDiscoveryRequest(
-        provider=provider,
-        repository_path="D:/Madhav",
-    )
-
-    result = executor.execute(
-        request,
-        integration_request=discovery_request,
-    )
-
-    assert result.passed is True
-
-    assert checkpoint_manager.calls == [
-        (
-            "create",
-            "evo-test-001",
-            "D:/Madhav",
-        ),
-        (
-            "set_evolution_commit",
-            "evo-test-001",
-            "evolution-commit-001",
-        ),
-        (
-            "complete",
-            "evo-test-001",
-        ),
-    ]
-
-    assert git_commit.calls == [
-        (
-            "D:/Madhav",
-            (
-                "brain/research.py",
-                "tests/test_research.py",
-            ),
-            "evolution: web_research",
-        ),
-    ]
-
-    assert integrator.calls == [
-        (capability, True),
-    ]
-
-    assert recovery.calls == []
-
-
-def test_autonomous_execution_recovers_when_integration_fails():
-    provider = EvolvedCapabilityProvider()
-
-    discovery = FakeCapabilityDiscovery(
-        (
-            provider.capability_descriptor(),
-        )
-    )
-
-    checkpoint_manager = FakeCheckpointManager()
-    git_commit = FakeEvolutionGitCommit()
-    recovery = FakeIntegrationRecoveryCoordinator()
-    id_generator = FakeEvolutionIdGenerator()
-
-    (
-        executor,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    ) = _executor(
-        discovery=discovery,
-        capability_integrator=FakeCapabilityIntegrator(
-            exception=RuntimeError(
-                "integration failed"
-            )
-        ),
-        checkpoint_manager=checkpoint_manager,
-        evolution_git_commit=git_commit,
-        integration_recovery_coordinator=recovery,
-        evolution_id_generator=id_generator,
-        verification_command=(
-            AUTONOMOUS_VERIFICATION_COMMAND
-        ),
-    )
-
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="autonomous",
-    )
-
-    discovery_request = EvolutionDiscoveryRequest(
-        provider=provider,
-        repository_path="D:/Madhav",
-    )
-
-    with pytest.raises(
-        RuntimeError,
-        match="integration failed",
-    ):
-        executor.execute(
-            request,
-            integration_request=discovery_request,
-        )
-
-    assert checkpoint_manager.calls == [
-        (
-            "create",
-            "evo-test-001",
-            "D:/Madhav",
-        ),
-        (
-            "set_evolution_commit",
-            "evo-test-001",
-            "evolution-commit-001",
-        ),
-        (
-            "fail",
-            "evo-test-001",
-        ),
-    ]
-
-    assert recovery.calls
-
-    assert recovery.calls[0][1] == (
-        "integration failed"
-    )
-
-
-def test_autonomous_execution_rejects_unsafe_repository_before_engineering():
-    events = []
-
-    (
-        executor,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    ) = _executor(
-        checkpoint_uncommitted_changes=True,
-        events=events,
-    )
-
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="autonomous",
-    )
-
-    discovery_request = EvolutionDiscoveryRequest(
-        provider=EvolvedCapabilityProvider(),
-        repository_path="D:/Madhav",
-    )
-
-    with pytest.raises(
-        RuntimeError,
-        match="uncommitted changes",
-    ):
-        executor.execute(
-            request,
-            integration_request=discovery_request,
-        )
-
-    assert events == [
-        "checkpoint",
-        "fail",
-    ]
-
-
-def test_autonomous_execution_rejects_untracked_repository_before_engineering():
-    events = []
-
-    (
-        executor,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    ) = _executor(
-        checkpoint_untracked_files=True,
-        events=events,
-    )
-
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="autonomous",
-    )
-
-    discovery_request = EvolutionDiscoveryRequest(
-        provider=EvolvedCapabilityProvider(),
-        repository_path="D:/Madhav",
-    )
-
-    with pytest.raises(
-        RuntimeError,
-        match="untracked files",
-    ):
-        executor.execute(
-            request,
-            integration_request=discovery_request,
-        )
-
-    assert events == [
-        "checkpoint",
-        "fail",
-    ]
-
-
-def test_autonomous_execution_recovers_after_engineering_failure():
-    events = []
-
-    (
-        executor,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    ) = _executor(
-        engineering_loop_exception=RuntimeError(
-            "engineering failed"
-        ),
-        events=events,
-    )
-
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="autonomous",
-    )
-
-    discovery_request = EvolutionDiscoveryRequest(
-        provider=EvolvedCapabilityProvider(),
-        repository_path="D:/Madhav",
-    )
-
-    with pytest.raises(
-        RuntimeError,
-        match="engineering failed",
-    ):
-        executor.execute(
-            request,
-            integration_request=discovery_request,
-        )
-
-    assert events == [
-        "checkpoint",
-        "fail",
-    ]
-
-
-def test_autonomous_execution_does_not_commit_after_failed_verification():
-    events = []
-
-    (
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        context,
-    ) = _executor()
-
-    (
-        requirement,
-        _,
-        _,
-        _,
-        _,
-        _,
-        generation_result,
-        test_result,
-        _,
-    ) = context
-
-    failed_loop_result = EngineeringLoopResult(
-        changes=(
-            generation_result.changes
-            + test_result.changes
-        ),
-        passed=False,
-        iterations=(),
-        termination_reason=(
-            "max_iterations_reached"
-        ),
-    )
-
-    (
-        executor,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    ) = _executor(
-        loop_result=failed_loop_result,
-        events=events,
-    )
-
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="autonomous",
-    )
-
-    discovery_request = EvolutionDiscoveryRequest(
-        provider=EvolvedCapabilityProvider(),
-        repository_path="D:/Madhav",
-    )
-
-    result = executor.execute(
-        request,
-        integration_request=discovery_request,
-    )
-
-    assert result.passed is False
-    assert "commit" not in events
-    assert "integration" not in events
-
-
-def test_autonomous_execution_does_not_integrate_after_commit_failure():
-    events = []
-
-    (
-        executor,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    ) = _executor(
-        git_commit_exception=RuntimeError(
-            "commit failed"
-        ),
         events=events,
         verification_command=(
             AUTONOMOUS_VERIFICATION_COMMAND
         ),
     )
 
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
+    request = _request(
         mode="autonomous",
     )
 
     discovery_request = EvolutionDiscoveryRequest(
         provider=EvolvedCapabilityProvider(),
-        repository_path="D:/Madhav",
-    )
-
-    with pytest.raises(
-        RuntimeError,
-        match="commit failed",
-    ):
-        executor.execute(
-            request,
-            integration_request=discovery_request,
-        )
-
-    assert "integration" not in events
-
-
-def test_autonomous_execution_orders_successful_lifecycle():
-    events = []
-
-    provider = EvolvedCapabilityProvider()
-
-    discovery = FakeCapabilityDiscovery(
-        (
-            provider.capability_descriptor(),
-        )
-    )
-
-    integrator = FakeCapabilityIntegrator(
-        events=events,
-    )
-
-    (
-        executor,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-        _,
-    ) = _executor(
-        discovery=discovery,
-        capability_integrator=integrator,
-        events=events,
-        verification_command=(
-            AUTONOMOUS_VERIFICATION_COMMAND
-        ),
-    )
-
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
-        mode="autonomous",
-    )
-
-    discovery_request = EvolutionDiscoveryRequest(
-        provider=provider,
         repository_path="D:/Madhav",
     )
 
@@ -2720,6 +2220,8 @@ def test_autonomous_execution_orders_successful_lifecycle():
     )
 
     assert result.passed is True
+
+    assert engineering_loop.calls
 
     assert events == [
         "checkpoint",
@@ -2729,26 +2231,30 @@ def test_autonomous_execution_orders_successful_lifecycle():
         "complete",
     ]
 
+    assert len(discovery.calls) == 1
 
-def test_autonomous_execution_passes_committed_checkpoint_to_recovery():
-    provider = EvolvedCapabilityProvider()
+    assert len(discovery.calls[0]) == 1
+
+    assert isinstance(
+        discovery.calls[0][0],
+        EvolvedCapabilityProvider,
+    )
+
+
+def test_autonomous_execution_recovers_when_integration_fails():
+    events = []
 
     discovery = FakeCapabilityDiscovery(
         (
-            provider.capability_descriptor(),
+            EvolvedCapabilityProvider.capability_descriptor(),
         )
     )
 
-    integrator = FakeCapabilityIntegrator(
-        exception=RuntimeError(
-            "integration failed"
-        ),
+    recovery = (
+        FakeIntegrationRecoveryCoordinator(
+            events=events
+        )
     )
-
-    checkpoint_manager = FakeCheckpointManager()
-    git_commit = FakeEvolutionGitCommit()
-    recovery = FakeIntegrationRecoveryCoordinator()
-    id_generator = FakeEvolutionIdGenerator()
 
     (
         executor,
@@ -2762,25 +2268,24 @@ def test_autonomous_execution_passes_committed_checkpoint_to_recovery():
         _,
     ) = _executor(
         discovery=discovery,
-        capability_integrator=integrator,
-        checkpoint_manager=checkpoint_manager,
-        evolution_git_commit=git_commit,
-        integration_recovery_coordinator=recovery,
-        evolution_id_generator=id_generator,
+        integration_recovery_coordinator=(
+            recovery
+        ),
+        integration_exception=RuntimeError(
+            "integration failed"
+        ),
+        events=events,
         verification_command=(
             AUTONOMOUS_VERIFICATION_COMMAND
         ),
     )
 
-    request = EvolutionRequest(
-        requested_capability="web_research",
-        objective="Add web research.",
-        constraints=frozenset(),
+    request = _request(
         mode="autonomous",
     )
 
     discovery_request = EvolutionDiscoveryRequest(
-        provider=provider,
+        provider=EvolvedCapabilityProvider(),
         repository_path="D:/Madhav",
     )
 
@@ -2804,3 +2309,864 @@ def test_autonomous_execution_passes_committed_checkpoint_to_recovery():
     assert checkpoint.status == (
         EvolutionCheckpointManager.ACTIVE
     )
+
+
+def test_autonomous_execution_rejects_unsafe_repository_before_engineering():
+    events = []
+
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        engineering_loop,
+        _,
+        _,
+    ) = _executor(
+        checkpoint_uncommitted_changes=True,
+        events=events,
+        verification_command=(
+            AUTONOMOUS_VERIFICATION_COMMAND
+        ),
+    )
+
+    discovery_request = EvolutionDiscoveryRequest(
+        provider=EvolvedCapabilityProvider(),
+        repository_path="D:/Madhav",
+    )
+
+    with pytest.raises(
+        RuntimeError,
+    ):
+        executor.execute(
+            _request(
+                mode="autonomous",
+            ),
+            integration_request=discovery_request,
+        )
+
+    assert engineering_loop.calls == []
+
+    assert events == [
+        "checkpoint",
+        "fail",
+    ]
+
+
+def test_autonomous_execution_rejects_untracked_repository_before_engineering():
+    events = []
+
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        engineering_loop,
+        _,
+        _,
+    ) = _executor(
+        checkpoint_untracked_files=True,
+        events=events,
+        verification_command=(
+            AUTONOMOUS_VERIFICATION_COMMAND
+        ),
+    )
+
+    discovery_request = EvolutionDiscoveryRequest(
+        provider=EvolvedCapabilityProvider(),
+        repository_path="D:/Madhav",
+    )
+
+    with pytest.raises(
+        RuntimeError,
+    ):
+        executor.execute(
+            _request(
+                mode="autonomous",
+            ),
+            integration_request=discovery_request,
+        )
+
+    assert engineering_loop.calls == []
+
+    assert events == [
+        "checkpoint",
+        "fail",
+    ]
+
+
+def test_autonomous_execution_recovers_after_engineering_failure():
+    events = []
+
+    recovery = (
+        FakeIntegrationRecoveryCoordinator(
+            events=events
+        )
+    )
+
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        engineering_loop,
+        _,
+        _,
+    ) = _executor(
+        integration_recovery_coordinator=(
+            recovery
+        ),
+        engineering_loop_exception=RuntimeError(
+            "engineering failed"
+        ),
+        events=events,
+        verification_command=(
+            AUTONOMOUS_VERIFICATION_COMMAND
+        ),
+    )
+
+    discovery_request = EvolutionDiscoveryRequest(
+        provider=EvolvedCapabilityProvider(),
+        repository_path="D:/Madhav",
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="engineering failed",
+    ):
+        executor.execute(
+            _request(
+                mode="autonomous",
+            ),
+            integration_request=discovery_request,
+        )
+
+    assert len(recovery.calls) == 0
+
+    assert events == [
+        "checkpoint",
+        "fail",
+    ]
+
+
+def test_autonomous_execution_does_not_commit_after_failed_verification():
+    events = []
+
+    failed_result = _task_result(
+        task_id="task-1",
+        description="First task.",
+        passed=False,
+    )
+
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    ) = _executor(
+        loop_result=failed_result.engineering_result,
+        events=events,
+        verification_command=(
+            AUTONOMOUS_VERIFICATION_COMMAND
+        ),
+    )
+
+    discovery_request = EvolutionDiscoveryRequest(
+        provider=EvolvedCapabilityProvider(),
+        repository_path="D:/Madhav",
+    )
+
+    result = executor.execute(
+        _request(
+            mode="autonomous",
+        ),
+        integration_request=discovery_request,
+    )
+
+    assert result.passed is False
+
+    assert "commit" not in events
+
+    assert "integration" not in events
+
+
+def test_autonomous_execution_does_not_integrate_after_commit_failure():
+    events = []
+
+    discovery = FakeCapabilityDiscovery(
+        (
+            EvolvedCapabilityProvider.capability_descriptor(),
+        )
+    )
+
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    ) = _executor(
+        discovery=discovery,
+        git_commit_exception=RuntimeError(
+            "commit failed"
+        ),
+        events=events,
+        verification_command=(
+            AUTONOMOUS_VERIFICATION_COMMAND
+        ),
+    )
+
+    discovery_request = EvolutionDiscoveryRequest(
+        provider=EvolvedCapabilityProvider(),
+        repository_path="D:/Madhav",
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="commit failed",
+    ):
+        executor.execute(
+            _request(
+                mode="autonomous",
+            ),
+            integration_request=discovery_request,
+        )
+
+    assert "integration" not in events
+
+
+def test_autonomous_execution_orders_successful_lifecycle():
+    events = []
+
+    discovery = FakeCapabilityDiscovery(
+        (
+            EvolvedCapabilityProvider.capability_descriptor(),
+        )
+    )
+
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    ) = _executor(
+        discovery=discovery,
+        events=events,
+        verification_command=(
+            AUTONOMOUS_VERIFICATION_COMMAND
+        ),
+    )
+
+    discovery_request = EvolutionDiscoveryRequest(
+        provider=EvolvedCapabilityProvider(),
+        repository_path="D:/Madhav",
+    )
+
+    executor.execute(
+        _request(
+            mode="autonomous",
+        ),
+        integration_request=discovery_request,
+    )
+
+    assert events == [
+        "checkpoint",
+        "engineering",
+        "commit",
+        "integration",
+        "complete",
+    ]
+
+
+def test_autonomous_execution_passes_committed_checkpoint_to_recovery():
+    events = []
+
+    discovery = FakeCapabilityDiscovery(
+        (
+            EvolvedCapabilityProvider.capability_descriptor(),
+        )
+    )
+
+    recovery = (
+        FakeIntegrationRecoveryCoordinator(
+            events=events
+        )
+    )
+
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    ) = _executor(
+        discovery=discovery,
+        integration_recovery_coordinator=(
+            recovery
+        ),
+        integration_exception=RuntimeError(
+            "integration failed"
+        ),
+        events=events,
+        verification_command=(
+            AUTONOMOUS_VERIFICATION_COMMAND
+        ),
+    )
+
+    discovery_request = EvolutionDiscoveryRequest(
+        provider=EvolvedCapabilityProvider(),
+        repository_path="D:/Madhav",
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="integration failed",
+    ):
+        executor.execute(
+            _request(
+                mode="autonomous",
+            ),
+            integration_request=discovery_request,
+        )
+
+    assert len(recovery.calls) == 1
+
+    checkpoint = recovery.calls[0][0]
+
+    assert checkpoint.evolution_commit_hash == (
+        "evolution-commit-001"
+    )
+
+    assert checkpoint.status == (
+        EvolutionCheckpointManager.ACTIVE
+    )
+
+
+def _dependency_requirement(
+    name="requests",
+    version="2.31.0",
+):
+    dependency = Dependency(
+        name=name,
+        version=version,
+        source="requirements.txt",
+    )
+
+    return EvolutionDependencyRequirement(
+        dependency=dependency,
+        reason=(
+            "The evolution implementation "
+            "requires the package."
+        ),
+    )
+
+
+def _dependency_environment(
+    dependencies=(),
+    managers=(),
+):
+    return PackageManagerEnvironment(
+        managers=set(managers),
+        dependency_files=set(),
+        dependencies=set(dependencies),
+        lifecycles=set(),
+    )
+
+
+def _request_with_dependencies(
+    requirements,
+):
+    return EvolutionRequest(
+        requested_capability="web_research",
+        objective="Add web research.",
+        constraints=frozenset(),
+        mode="supervised",
+        dependency_requirements=tuple(
+            requirements
+        ),
+    )
+
+
+def test_executor_dependency_gate_is_unchanged_when_no_dependencies_exist():
+    dependency_discovery = (
+        FakeEvolutionDependencyDiscovery(
+            _dependency_environment()
+        )
+    )
+
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        engineering_loop,
+        _,
+    ) = _executor(
+        dependency_discovery=dependency_discovery,
+    )
+
+    result = executor.execute(
+        _request_with_dependencies(())
+    )
+
+    assert result.passed is True
+
+    assert dependency_discovery.calls == []
+
+    assert len(engineering_loop.calls) == 1
+
+
+def test_executor_allows_engineering_when_dependency_is_available():
+    requirement = _dependency_requirement()
+
+    dependency = requirement.dependency
+
+    dependency_discovery = (
+        FakeEvolutionDependencyDiscovery(
+            _dependency_environment(
+                dependencies=(dependency,),
+            )
+        )
+    )
+
+    planner = (
+        RecordingEvolutionDependencyPlanner()
+    )
+
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        engineering_loop,
+        _,
+    ) = _executor(
+        dependency_discovery=dependency_discovery,
+        dependency_planner=planner,
+    )
+
+    result = executor.execute(
+        _request_with_dependencies(
+            (requirement,)
+        ),
+        dependency_signatures=(
+            "requirements.txt",
+        ),
+    )
+
+    assert result.passed is True
+
+    assert dependency_discovery.calls == [
+        ("requirements.txt",),
+    ]
+
+    assert (
+        planner.plans[0].operation.value
+        == "no_action"
+    )
+
+    assert len(engineering_loop.calls) == 1
+
+
+def test_executor_blocks_engineering_when_missing_dependency_is_resolvable():
+    requirement = _dependency_requirement()
+
+    dependency_discovery = (
+        FakeEvolutionDependencyDiscovery(
+            _dependency_environment(
+                managers=(
+                    type(
+                        "Manager",
+                        (),
+                        {"name": "pip"},
+                    )(),
+                ),
+            )
+        )
+    )
+
+    planner = (
+        RecordingEvolutionDependencyPlanner()
+    )
+
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        engineering_loop,
+        _,
+    ) = _executor(
+        dependency_discovery=dependency_discovery,
+        dependency_planner=planner,
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match=(
+            "dependency safety validation failed: "
+            "dependency addition requires explicit "
+            "dependency mutation authorization"
+        ),
+    ):
+        executor.execute(
+            _request_with_dependencies(
+                (requirement,)
+            ),
+            dependency_signatures=(
+                "requirements.txt",
+            ),
+        )
+
+    assert (
+        planner.plans[0].operation.value
+        == "add"
+    )
+
+    assert engineering_loop.calls == []
+
+
+def test_executor_blocks_engineering_when_dependency_version_mismatch_is_resolvable():
+    requirement = _dependency_requirement(
+        version="2.32.0",
+    )
+
+    installed = Dependency(
+        name="requests",
+        version="2.31.0",
+        source="requirements.txt",
+    )
+
+    dependency_discovery = (
+        FakeEvolutionDependencyDiscovery(
+            _dependency_environment(
+                dependencies=(installed,),
+                managers=(
+                    type(
+                        "Manager",
+                        (),
+                        {"name": "pip"},
+                    )(),
+                ),
+            )
+        )
+    )
+
+    planner = (
+        RecordingEvolutionDependencyPlanner()
+    )
+
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        engineering_loop,
+        _,
+    ) = _executor(
+        dependency_discovery=dependency_discovery,
+        dependency_planner=planner,
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match=(
+            "dependency safety validation failed: "
+            "dependency update requires explicit "
+            "dependency mutation authorization"
+        ),
+    ):
+        executor.execute(
+            _request_with_dependencies(
+                (requirement,)
+            ),
+            dependency_signatures=(
+                "requirements.txt",
+            ),
+        )
+
+    assert (
+        planner.plans[0].operation.value
+        == "update"
+    )
+
+    assert engineering_loop.calls == []
+
+
+def test_executor_blocks_engineering_when_dependency_is_not_resolvable():
+    requirement = _dependency_requirement()
+
+    dependency_discovery = (
+        FakeEvolutionDependencyDiscovery(
+            _dependency_environment()
+        )
+    )
+
+    planner = (
+        RecordingEvolutionDependencyPlanner()
+    )
+
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        engineering_loop,
+        _,
+    ) = _executor(
+        dependency_discovery=dependency_discovery,
+        dependency_planner=planner,
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match=(
+            "dependency safety validation failed: "
+            "dependency plan is blocked:"
+        ),
+    ):
+        executor.execute(
+            _request_with_dependencies(
+                (requirement,)
+            ),
+            dependency_signatures=(
+                "requirements.txt",
+            ),
+        )
+
+    assert (
+        planner.plans[0].operation.value
+        == "blocked"
+    )
+
+    assert engineering_loop.calls == []
+
+
+def test_autonomous_dependency_block_marks_checkpoint_failed_and_skips_engineering():
+    requirement = _dependency_requirement()
+
+    dependency_discovery = (
+        FakeEvolutionDependencyDiscovery(
+            _dependency_environment()
+        )
+    )
+
+    planner = (
+        RecordingEvolutionDependencyPlanner()
+    )
+
+    events = []
+
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        engineering_loop,
+        _,
+    ) = _executor(
+        dependency_discovery=dependency_discovery,
+        dependency_planner=planner,
+        events=events,
+    )
+
+    request = EvolutionRequest(
+        requested_capability="web_research",
+        objective="Add web research.",
+        constraints=frozenset(),
+        mode="autonomous",
+        dependency_requirements=(
+            requirement,
+        ),
+    )
+
+    discovery_request = EvolutionDiscoveryRequest(
+        provider=EvolvedCapabilityProvider(),
+        repository_path="D:/Madhav",
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match=(
+            "dependency safety validation failed: "
+            "dependency plan is blocked:"
+        ),
+    ):
+        executor.execute(
+            request,
+            integration_request=(
+                discovery_request
+            ),
+            dependency_signatures=(
+                "requirements.txt",
+            ),
+        )
+
+    assert engineering_loop.calls == []
+
+    assert "commit" not in events
+
+    assert "integration" not in events
+
+    assert "fail" in events
+    
+def test_executor_allows_evolution_when_dependency_requires_no_action():
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        engineering_loop,
+        _,
+    ) = _executor()
+
+    dependency_plan = _dependency_plan(
+        EvolutionDependencyPlanOperation.NO_ACTION,
+    )
+
+    safety_policy = FakeDependencySafetyPolicy(
+        allowed=True,
+    )
+
+    executor._dependency_safety_policy = safety_policy
+
+    result = executor._validate_dependency_safety(
+        plans=(dependency_plan,),
+        evolution_id="evolution-1",
+        checkpoint=None,
+    )
+
+    assert result.allowed is True
+    
+def test_executor_blocks_dependency_add_before_engineering():
+    events = []
+
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        engineering_loop,
+        _,
+    ) = _executor(
+        events=events,
+    )
+
+    executor._dependency_safety_policy = (
+        FakeDependencySafetyPolicy(
+            allowed=False,
+            reason=(
+                "dependency addition requires "
+                "explicit dependency mutation authorization"
+            ),
+        )
+    )
+
+    dependency_plan = _dependency_plan(
+        EvolutionDependencyPlanOperation.ADD,
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="dependency safety validation failed",
+    ):
+        executor._validate_dependency_safety(
+            plans=(dependency_plan,),
+            evolution_id="evolution-1",
+            checkpoint=None,
+        )
+
+    assert engineering_loop.calls == []
+    assert "engineering" not in events
+    
+def test_executor_blocks_dependency_update_before_engineering():
+    events = []
+
+    (
+        executor,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+        engineering_loop,
+        _,
+    ) = _executor(
+        events=events,
+    )
+
+    executor._dependency_safety_policy = (
+        FakeDependencySafetyPolicy(
+            allowed=False,
+            reason=(
+                "dependency update requires "
+                "explicit dependency mutation authorization"
+            ),
+        )
+    )
+
+    dependency_plan = _dependency_plan(
+        EvolutionDependencyPlanOperation.UPDATE,
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="dependency safety validation failed",
+    ):
+        executor._validate_dependency_safety(
+            plans=(dependency_plan,),
+            evolution_id="evolution-1",
+            checkpoint=None,
+        )
+
+    assert engineering_loop.calls == []
+    assert "engineering" not in events

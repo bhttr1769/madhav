@@ -45,6 +45,18 @@ from brain.evolution.evolution_capability_validator import (
 from brain.evolution.evolution_change_validator import (
     EvolutionChangeValidator,
 )
+from brain.evolution.evolution_dependency_availability import (
+    EvolutionDependencyAvailability,
+)
+from brain.evolution.evolution_dependency_discovery import (
+    EvolutionDependencyDiscovery,
+)
+from brain.evolution.evolution_dependency_planner import (
+    EvolutionDependencyPlanner,
+)
+from brain.evolution.evolution_dependency_resolution import (
+    EvolutionDependencyResolutionService,
+)
 from brain.evolution.git.evolution_git_commit import (
     EvolutionGitCommit,
 )
@@ -65,6 +77,9 @@ from brain.evolution.models.evolution_request import (
 )
 from brain.evolution.models.evolution_result import (
     EvolutionResult,
+)
+from brain.evolution.evolution_dependency_safety_policy import (
+    EvolutionDependencySafetyPolicy,
 )
 
 
@@ -95,6 +110,11 @@ class EvolutionExecutor:
         integration_recovery_coordinator=None,
         safety_policy=None,
         evolution_validator=None,
+        dependency_discovery=None,
+        dependency_availability=None,
+        dependency_resolution=None,
+        dependency_planner=None,
+        dependency_safety_policy=None,
     ):
         self._requirement_service = requirement_service
         self._task_decomposer = task_decomposer
@@ -194,6 +214,28 @@ class EvolutionExecutor:
             else EvolutionSafetyPolicy()
         )
 
+        self._dependency_discovery = (
+            dependency_discovery
+        )
+
+        self._dependency_availability = (
+            dependency_availability
+            if dependency_availability is not None
+            else EvolutionDependencyAvailability()
+        )
+
+        self._dependency_resolution = (
+            dependency_resolution
+            if dependency_resolution is not None
+            else EvolutionDependencyResolutionService()
+        )
+
+        self._dependency_planner = (
+            dependency_planner
+            if dependency_planner is not None
+            else EvolutionDependencyPlanner()
+        )
+
         self._evolution_validator = (
             evolution_validator
             if evolution_validator is not None
@@ -208,6 +250,12 @@ class EvolutionExecutor:
                     EvolutionSystemRegressionValidator()
                 ),
             )
+        )
+        
+        self._dependency_safety_policy = (
+            dependency_safety_policy
+            if dependency_safety_policy is not None
+            else EvolutionDependencySafetyPolicy()
         )
 
     def propose(
@@ -250,6 +298,7 @@ class EvolutionExecutor:
         self,
         request: EvolutionRequest,
         integration_request=None,
+        dependency_signatures=None,
     ) -> EvolutionResult:
         if not isinstance(
             request,
@@ -356,6 +405,19 @@ class EvolutionExecutor:
                     evolution_id
                 )
                 raise
+
+        dependency_plans = self._validate_dependencies(
+            request=request,
+            dependency_signatures=dependency_signatures,
+            evolution_id=evolution_id,
+            checkpoint=checkpoint,
+        )
+        
+        self._validate_dependency_safety(
+            plans=dependency_plans,
+            evolution_id=evolution_id,
+            checkpoint=checkpoint,
+        )
 
         task_results = []
 
@@ -596,6 +658,108 @@ class EvolutionExecutor:
 
         return evolution_result
 
+    def _validate_dependencies(
+        self,
+        request: EvolutionRequest,
+        dependency_signatures,
+        evolution_id,
+        checkpoint,
+    ):
+        requirements = (
+            request.dependency_requirements
+        )
+
+        if not requirements:
+            return ()
+
+        if self._dependency_discovery is None:
+            self._fail_dependency_validation(
+                evolution_id=evolution_id,
+                checkpoint=checkpoint,
+            )
+
+            raise RuntimeError(
+                "dependency requirements exist but "
+                "dependency discovery is not configured"
+            )
+
+        try:
+            environment = (
+                self._dependency_discovery.discover(
+                    dependency_signatures
+                )
+            )
+
+            plans = []
+
+            for dependency_requirement in requirements:
+                assessment = (
+                    self._dependency_availability.assess(
+                        dependency_requirement,
+                        environment,
+                    )
+                )
+
+                resolution = (
+                    self._dependency_resolution.resolve(
+                        assessment,
+                        environment,
+                    )
+                )
+
+                plan = self._dependency_planner.plan(
+                    dependency_requirement,
+                    resolution,
+                )
+
+                plans.append(plan)
+
+            return tuple(plans)
+
+        except Exception:
+            if checkpoint is not None:
+                self._checkpoint_manager.fail(
+                    evolution_id
+                )
+
+            raise
+
+    def _fail_dependency_validation(
+        self,
+        evolution_id,
+        checkpoint,
+    ):
+        if checkpoint is not None:
+            self._checkpoint_manager.fail(
+                evolution_id
+            )
+            
+            
+    def _validate_dependency_safety(
+        self,
+        plans,
+        evolution_id,
+        checkpoint,
+    ):
+        safety_result = (
+            self._dependency_safety_policy.evaluate(
+                plans,
+            )
+        )
+
+        if safety_result.allowed:
+            return safety_result
+
+        if checkpoint is not None:
+            self._checkpoint_manager.fail(
+                evolution_id
+            )
+
+        raise RuntimeError(
+            "dependency safety validation failed: "
+            f"{safety_result.reason}"
+        )
+
     def _integrate(
         self,
         discovery_request: EvolutionDiscoveryRequest,
@@ -608,7 +772,7 @@ class EvolutionExecutor:
             raise TypeError(
                 "discovery_request must be an "
                 "EvolutionDiscoveryRequest"
-            )   
+            )
 
         if self._capability_integrator is None:
             raise RuntimeError(
@@ -622,14 +786,14 @@ class EvolutionExecutor:
                     (
                         discovery_request.provider,
                     )
-                )   
+                )
             )
 
         if not capabilities:
             raise ValueError(
                 "evolved provider did not expose "
                 "a capability descriptor"
-        )
+            )
 
         if len(capabilities) != 1:
             raise ValueError(
@@ -672,3 +836,4 @@ class EvolutionExecutor:
             design,
             plan,
         )
+        
