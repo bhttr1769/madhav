@@ -81,6 +81,9 @@ from brain.evolution.models.evolution_result import (
 from brain.evolution.evolution_dependency_safety_policy import (
     EvolutionDependencySafetyPolicy,
 )
+from brain.evolution.evolution_improvement_request_builder import (
+    EvolutionImprovementRequestBuilder,
+)
 
 
 class EvolutionExecutor:
@@ -115,6 +118,7 @@ class EvolutionExecutor:
         dependency_resolution=None,
         dependency_planner=None,
         dependency_safety_policy=None,
+        improvement_request_builder=None,
     ):
         self._requirement_service = requirement_service
         self._task_decomposer = task_decomposer
@@ -257,6 +261,12 @@ class EvolutionExecutor:
             if dependency_safety_policy is not None
             else EvolutionDependencySafetyPolicy()
         )
+        
+        self._improvement_request_builder = (
+            improvement_request_builder
+            if improvement_request_builder is not None
+            else EvolutionImprovementRequestBuilder()
+        )
 
     def propose(
         self,
@@ -294,6 +304,26 @@ class EvolutionExecutor:
             plan=plan,
         )
 
+    def execute_improvement(
+        self,
+        improvement_plan,
+        integration_request=None,
+        dependency_signatures=None,
+        mode="supervised",
+    ) -> EvolutionResult:
+        request = (
+            self._improvement_request_builder.build(
+                improvement_plan,
+                mode=mode,
+            )
+        )
+
+        return self.execute(
+            request=request,
+            integration_request=integration_request,
+            dependency_signatures=dependency_signatures,
+        )
+    
     def execute(
         self,
         request: EvolutionRequest,

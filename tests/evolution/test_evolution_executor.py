@@ -884,6 +884,7 @@ def _context():
 
 def _executor(
     loop_result=None,
+    requirement_override=None,
     discovery=None,
     capability_integrator=None,
     checkpoint_manager=None,
@@ -902,6 +903,7 @@ def _executor(
     dependency_availability=None,
     dependency_resolution=None,
     dependency_planner=None,
+    evolution_validator=None,
 ):
     (
         requirement,
@@ -914,6 +916,9 @@ def _executor(
         test_result,
         default_loop_result,
     ) = _context()
+    
+    if requirement_override is not None:
+        requirement = requirement_override
 
     if loop_result is None:
         loop_result = default_loop_result
@@ -1010,6 +1015,7 @@ def _executor(
         dependency_availability=dependency_availability,
         dependency_resolution=dependency_resolution,
         dependency_planner=dependency_planner,
+        evolution_validator=evolution_validator,
     )
 
     return (
