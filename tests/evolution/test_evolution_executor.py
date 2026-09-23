@@ -73,6 +73,11 @@ from brain.evolution.evolution_checkpoint import (
     EvolutionCheckpointManager,
 )
 
+AUTONOMOUS_VERIFICATION_COMMAND = (
+    "python",
+    "-c",
+    "import sys; sys.exit(0)",
+)
 
 class FakeRequirementService:
     def __init__(self, result):
@@ -487,7 +492,7 @@ class EvolvedCapabilityProvider:
     @staticmethod
     def capability_descriptor():
         return CapabilityDescriptor(
-            id="evolved_capability",
+            id="web_research",
             name="Evolved Capability",
             description=(
                 "A capability created through evolution."
@@ -498,6 +503,10 @@ class EvolvedCapabilityProvider:
             ),
             dependencies=frozenset(),
         )
+
+
+class InvalidEvolvedCapabilityProvider:
+    pass
 
 
 class InvalidEvolvedCapabilityProvider:
@@ -732,6 +741,7 @@ def _executor(
     integration_exception=None,
     events=None,
     safety_policy=None,
+    verification_command="pytest tests -q",
 ):
     (
         requirement,
@@ -823,7 +833,7 @@ def _executor(
         test_generator=test_generator,
         engineering_loop=engineering_loop,
         existing_code=existing_code,
-        verification_command="pytest tests -q",
+        verification_command=verification_command,
         max_iterations=3,
         discovery=discovery,
         checkpoint_manager=checkpoint_manager,
@@ -929,9 +939,9 @@ def _task_result(
         engineering_result=loop_result,
     )
 
-
 def _multi_task_executor(
     task_results,
+    verification_command="pytest tests -q",
 ):
     (
         requirement,
@@ -1002,7 +1012,7 @@ def _multi_task_executor(
             loop_result
         ),
         existing_code=existing_code,
-        verification_command="pytest tests -q",
+        verification_command=verification_command,
         max_iterations=3,
         task_executor=task_executor,
         checkpoint_manager=checkpoint_manager,
@@ -1191,7 +1201,11 @@ def test_executor_rejects_empty_task_decomposition():
             loop_result
         ),
         existing_code=existing_code,
-        verification_command="pytest tests -q",
+        verification_command=(
+            "pytest",
+            "tests",
+            "-q",
+        ),
         max_iterations=3,
     )
 
@@ -1418,7 +1432,6 @@ def test_autonomous_execution_rejects_invalid_discovery_request():
             integration_request=object(),
         )
 
-
 def test_autonomous_execution_discovers_provider():
     provider = EvolvedCapabilityProvider()
 
@@ -1443,6 +1456,9 @@ def test_autonomous_execution_discovers_provider():
     ) = _executor(
         discovery=discovery,
         capability_integrator=integrator,
+        verification_command=(
+            AUTONOMOUS_VERIFICATION_COMMAND
+        ),
     )
 
     request = EvolutionRequest(
@@ -1493,6 +1509,9 @@ def test_autonomous_execution_integrates_discovered_capability():
     ) = _executor(
         discovery=discovery,
         capability_integrator=integrator,
+        verification_command=(
+            AUTONOMOUS_VERIFICATION_COMMAND
+        ),
     )
 
     request = EvolutionRequest(
@@ -1545,6 +1564,9 @@ def test_autonomous_execution_rejects_provider_without_descriptor():
     ) = _executor(
         discovery=discovery,
         capability_integrator=integrator,
+        verification_command=(
+            AUTONOMOUS_VERIFICATION_COMMAND
+        ),
     )
 
     request = EvolutionRequest(
@@ -1560,8 +1582,11 @@ def test_autonomous_execution_rejects_provider_without_descriptor():
     )
 
     with pytest.raises(
-        ValueError,
-        match="did not expose a capability descriptor",
+        RuntimeError,
+        match=(
+            "evolution validation failed: "
+            "no capability descriptor was discovered"
+        ),
     ):
         executor.execute(
             request,
@@ -1634,6 +1659,9 @@ def test_autonomous_execution_does_not_integrate_after_failed_verification():
         loop_result=failed_loop_result,
         discovery=discovery,
         capability_integrator=integrator,
+        verification_command=(
+            AUTONOMOUS_VERIFICATION_COMMAND
+        ),
     )
 
     request = EvolutionRequest(
@@ -1829,7 +1857,10 @@ def test_autonomous_execution_integrates_only_after_all_tasks_pass():
         design,
         plan,
     ) = _multi_task_executor(
-        task_results
+        task_results,
+        verification_command=(
+            AUTONOMOUS_VERIFICATION_COMMAND
+        ),
     )
 
     provider = EvolvedCapabilityProvider()
@@ -2233,6 +2264,9 @@ def test_autonomous_execution_creates_checkpoint_commits_and_completes():
         evolution_git_commit=git_commit,
         integration_recovery_coordinator=recovery,
         evolution_id_generator=id_generator,
+        verification_command=(
+            AUTONOMOUS_VERIFICATION_COMMAND
+        ),
     )
 
     request = EvolutionRequest(
@@ -2324,6 +2358,9 @@ def test_autonomous_execution_recovers_when_integration_fails():
         evolution_git_commit=git_commit,
         integration_recovery_coordinator=recovery,
         evolution_id_generator=id_generator,
+        verification_command=(
+            AUTONOMOUS_VERIFICATION_COMMAND
+        ),
     )
 
     request = EvolutionRequest(
@@ -2602,6 +2639,9 @@ def test_autonomous_execution_does_not_integrate_after_commit_failure():
             "commit failed"
         ),
         events=events,
+        verification_command=(
+            AUTONOMOUS_VERIFICATION_COMMAND
+        ),
     )
 
     request = EvolutionRequest(
@@ -2657,6 +2697,9 @@ def test_autonomous_execution_orders_successful_lifecycle():
         discovery=discovery,
         capability_integrator=integrator,
         events=events,
+        verification_command=(
+            AUTONOMOUS_VERIFICATION_COMMAND
+        ),
     )
 
     request = EvolutionRequest(
@@ -2724,6 +2767,9 @@ def test_autonomous_execution_passes_committed_checkpoint_to_recovery():
         evolution_git_commit=git_commit,
         integration_recovery_coordinator=recovery,
         evolution_id_generator=id_generator,
+        verification_command=(
+            AUTONOMOUS_VERIFICATION_COMMAND
+        ),
     )
 
     request = EvolutionRequest(

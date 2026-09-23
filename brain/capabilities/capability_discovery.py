@@ -8,20 +8,46 @@ class CapabilityDiscovery:
         self,
         providers: tuple[object, ...] = (),
     ):
+        if not isinstance(
+            providers,
+            tuple,
+        ):
+            raise TypeError(
+                "providers must be a tuple"
+            )
+
         self._providers = providers
 
     def discover(
         self,
+        providers: tuple[object, ...] | None = None,
     ) -> tuple[CapabilityDescriptor, ...]:
+        if providers is None:
+            providers_to_discover = (
+                self._providers
+            )
+        else:
+            if not isinstance(
+                providers,
+                tuple,
+            ):
+                raise TypeError(
+                    "providers must be a tuple"
+                )
+
+            providers_to_discover = providers
+
         capabilities = []
 
-        for provider in self._providers:
+        for provider in providers_to_discover:
             capability = self._discover_provider(
                 provider
             )
 
             if capability is not None:
-                capabilities.append(capability)
+                capabilities.append(
+                    capability
+                )
 
         return tuple(capabilities)
 

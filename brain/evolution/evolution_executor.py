@@ -1,18 +1,5 @@
 from datetime import datetime
 
-from brain.evolution.evolution_history_recorder import (
-    EvolutionHistoryRecorder,
-)
-from brain.evolution.evolution_id_generator import (
-    EvolutionIdGenerator,
-)
-from brain.evolution.models.evolution_history import (
-    EvolutionHistory,
-)
-from brain.evolution.evolution_history_builder import (
-    EvolutionHistoryBuilder,
-)
-
 from brain.capabilities.capability_discovery import (
     CapabilityDiscovery,
 )
@@ -22,8 +9,26 @@ from brain.evolution.evolution_checkpoint import (
 from brain.evolution.evolution_failure_policy import (
     EvolutionFailurePolicy,
 )
+from brain.evolution.evolution_history_builder import (
+    EvolutionHistoryBuilder,
+)
+from brain.evolution.evolution_history_recorder import (
+    EvolutionHistoryRecorder,
+)
+from brain.evolution.evolution_id_generator import (
+    EvolutionIdGenerator,
+)
+from brain.evolution.evolution_integration_recovery_coordinator import (
+    EvolutionIntegrationRecoveryCoordinator,
+)
 from brain.evolution.evolution_policy import (
     EvolutionPolicy,
+)
+from brain.evolution.evolution_safety_policy import (
+    EvolutionSafetyPolicy,
+)
+from brain.evolution.evolution_system_regression_validator import (
+    EvolutionSystemRegressionValidator,
 )
 from brain.evolution.evolution_task_executor import (
     EvolutionTaskExecutor,
@@ -31,14 +36,23 @@ from brain.evolution.evolution_task_executor import (
 from brain.evolution.evolution_task_sequencer import (
     EvolutionTaskSequencer,
 )
-from brain.evolution.evolution_integration_recovery_coordinator import (
-    EvolutionIntegrationRecoveryCoordinator,
+from brain.evolution.evolution_validator import (
+    EvolutionValidator,
+)
+from brain.evolution.evolution_capability_validator import (
+    EvolutionCapabilityValidator,
+)
+from brain.evolution.evolution_change_validator import (
+    EvolutionChangeValidator,
 )
 from brain.evolution.git.evolution_git_commit import (
     EvolutionGitCommit,
 )
 from brain.evolution.models.evolution_discovery_request import (
     EvolutionDiscoveryRequest,
+)
+from brain.evolution.models.evolution_history import (
+    EvolutionHistory,
 )
 from brain.evolution.models.evolution_mode import (
     EvolutionMode,
@@ -51,9 +65,6 @@ from brain.evolution.models.evolution_request import (
 )
 from brain.evolution.models.evolution_result import (
     EvolutionResult,
-)
-from brain.evolution.evolution_safety_policy import (
-    EvolutionSafetyPolicy,
 )
 
 
@@ -83,6 +94,7 @@ class EvolutionExecutor:
         evolution_git_commit=None,
         integration_recovery_coordinator=None,
         safety_policy=None,
+        evolution_validator=None,
     ):
         self._requirement_service = requirement_service
         self._task_decomposer = task_decomposer
@@ -180,6 +192,22 @@ class EvolutionExecutor:
             safety_policy
             if safety_policy is not None
             else EvolutionSafetyPolicy()
+        )
+
+        self._evolution_validator = (
+            evolution_validator
+            if evolution_validator is not None
+            else EvolutionValidator(
+                change_validator=(
+                    EvolutionChangeValidator()
+                ),
+                capability_validator=(
+                    EvolutionCapabilityValidator()
+                ),
+                system_regression_validator=(
+                    EvolutionSystemRegressionValidator()
+                ),
+            )
         )
 
     def propose(
@@ -321,12 +349,12 @@ class EvolutionExecutor:
 
             try:
                 self._safety_policy.validate_autonomous_execution(
-                checkpoint
-            )
+                    checkpoint
+                )
             except Exception:
                 self._checkpoint_manager.fail(
-                evolution_id
-            )
+                    evolution_id
+                )
                 raise
 
         task_results = []
@@ -397,6 +425,60 @@ class EvolutionExecutor:
             task_results=task_results_tuple,
         )
 
+        capabilities = ()
+
+        if (
+            mode is EvolutionMode.AUTONOMOUS
+            and evolution_result.passed
+        ):
+            capabilities = tuple(
+                self._discovery.discover(
+                    providers=(
+                        integration_request.provider,
+                    ),
+                )
+            )
+
+            try:
+                validation_result = (
+                    self._evolution_validator.validate(
+                        proposed_changes=(
+                            proposed_changes
+                        ),
+                        engineering_result=(
+                            engineering_result
+                        ),
+                        capabilities=capabilities,
+                        requested_capability=(
+                            request.requested_capability
+                        ),
+                        verification_command=(
+                            self._verification_command
+                        ),
+                    )
+                )
+            except Exception:
+                self._checkpoint_manager.fail(
+                    evolution_id
+                )
+                raise
+
+            if not validation_result.passed:
+                self._checkpoint_manager.fail(
+                    evolution_id
+                )
+
+                failed_checks = tuple(
+                    check.reason
+                    for check in validation_result.checks
+                    if not check.passed
+                )
+
+                raise RuntimeError(
+                    "evolution validation failed: "
+                    + "; ".join(failed_checks)
+                )
+
         if (
             mode is EvolutionMode.AUTONOMOUS
             and evolution_result.passed
@@ -452,7 +534,8 @@ class EvolutionExecutor:
         ):
             try:
                 self._integrate(
-                    integration_request
+                    integration_request,
+                    capabilities=capabilities,
                 )
 
             except Exception as exc:
@@ -516,6 +599,7 @@ class EvolutionExecutor:
     def _integrate(
         self,
         discovery_request: EvolutionDiscoveryRequest,
+        capabilities=None,
     ) -> None:
         if not isinstance(
             discovery_request,
@@ -524,7 +608,7 @@ class EvolutionExecutor:
             raise TypeError(
                 "discovery_request must be an "
                 "EvolutionDiscoveryRequest"
-            )
+            )   
 
         if self._capability_integrator is None:
             raise RuntimeError(
@@ -532,17 +616,20 @@ class EvolutionExecutor:
                 "a CapabilityIntegrator"
             )
 
-        capabilities = self._discovery.discover(
-            providers=(
-                discovery_request.provider,
-            ),
-        )
+        if capabilities is None:
+            capabilities = tuple(
+                self._discovery.discover(
+                    (
+                        discovery_request.provider,
+                    )
+                )   
+            )
 
         if not capabilities:
             raise ValueError(
                 "evolved provider did not expose "
                 "a capability descriptor"
-            )
+        )
 
         if len(capabilities) != 1:
             raise ValueError(
