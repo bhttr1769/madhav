@@ -1,6 +1,7 @@
 from brain.capabilities.models.capability_descriptor import (
     CapabilityDescriptor,
 )
+
 from brain.capabilities.models.capability_descriptor_request import (
     CapabilityDescriptorRequest,
 )
@@ -16,8 +17,7 @@ class CapabilityDescriptorFactory:
             CapabilityDescriptorRequest,
         ):
             raise TypeError(
-                "request must be a "
-                "CapabilityDescriptorRequest"
+                "request must be a CapabilityDescriptorRequest"
             )
 
         return CapabilityDescriptor(
@@ -27,4 +27,6 @@ class CapabilityDescriptorFactory:
             version=request.version,
             entry_point=request.entry_point,
             dependencies=request.dependencies,
+            input_contract=request.input_contract,
+            output_contract=request.output_contract,
         )

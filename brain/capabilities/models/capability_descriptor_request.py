@@ -9,3 +9,5 @@ class CapabilityDescriptorRequest:
     version: str
     entry_point: str
     dependencies: frozenset[str]
+    input_contract: str = "object"
+    output_contract: str = "object"

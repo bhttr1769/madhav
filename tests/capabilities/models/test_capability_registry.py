@@ -109,3 +109,70 @@ def test_registry_unregister_rejects_missing_capability():
 
     with pytest.raises(KeyError):
         registry.unregister("missing")
+
+def test_registry_preserves_contracts() -> None:
+    capability = CapabilityDescriptor(
+        id="test.capability",
+        name="Test Capability",
+        description="Test capability.",
+        version="1.0.0",
+        entry_point="tests.capabilities.TestCapability",
+        dependencies=frozenset(),
+        input_contract="text",
+        output_contract="number",
+    )
+
+    registry = CapabilityRegistry()
+
+    registry.register(capability)
+
+    registered = registry.get(
+        "test.capability"
+    )
+
+    assert registered is capability
+    assert registered.input_contract == "text"
+    assert registered.output_contract == "number"
+
+def test_registry_all_preserves_contracts() -> None:
+    capability = CapabilityDescriptor(
+        id="test.capability",
+        name="Test Capability",
+        description="Test capability.",
+        version="1.0.0",
+        entry_point="tests.capabilities.TestCapability",
+        dependencies=frozenset(),
+        input_contract="text",
+        output_contract="number",
+    )
+
+    registry = CapabilityRegistry(
+        capabilities=(capability,)
+    )
+
+    registered = registry.all()
+
+    assert registered == (capability,)
+    assert registered[0].input_contract == "text"
+    assert registered[0].output_contract == "number"
+
+def test_registry_preserves_default_contracts() -> None:
+    capability = CapabilityDescriptor(
+        id="test.capability",
+        name="Test Capability",
+        description="Test capability.",
+        version="1.0.0",
+        entry_point="tests.capabilities.TestCapability",
+        dependencies=frozenset(),
+    )
+
+    registry = CapabilityRegistry(
+        capabilities=(capability,)
+    )
+
+    registered = registry.get(
+        "test.capability"
+    )
+
+    assert registered.input_contract == "object"
+    assert registered.output_contract == "object"

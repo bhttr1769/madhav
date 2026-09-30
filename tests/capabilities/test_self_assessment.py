@@ -115,3 +115,41 @@ def test_assessment_rejects_whitespace_request():
 
     with pytest.raises(ValueError):
         assessor.assess("   ")
+
+def test_assessment_preserves_compatibility_with_capability_contracts():
+    capability = CapabilityDescriptor(
+        id="web_research",
+        name="Web Research",
+        description="Research external information.",
+        version="1.0.0",
+        entry_point="brain.research.ResearchEngine",
+        dependencies=frozenset(),
+        input_contract="research_query",
+        output_contract="research_result",
+    )
+
+    registry = CapabilityRegistry(
+        capabilities=(capability,),
+    )
+
+    assessment = SelfAssessment(
+        registry
+    ).assess("web_research")
+
+    assert assessment.available is True
+    assert assessment.status == "available"
+    assert assessment.matched_capabilities == frozenset(
+    {"web_research"}
+    )
+
+    registered = registry.get(
+        "web_research"
+    )
+
+    assert registered is capability
+    assert registered.input_contract == (
+        "research_query"
+    )
+    assert registered.output_contract == (
+        "research_result"
+    )

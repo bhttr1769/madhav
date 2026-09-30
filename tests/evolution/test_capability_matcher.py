@@ -139,3 +139,33 @@ def test_rejects_invalid_capability():
             ),
             available_capabilities=("invalid",),
         )
+
+def test_matcher_preserves_capability_contracts():
+    capability = CapabilityDescriptor(
+        id="test.capability",
+        name="Test Capability",
+        description="Test capability",
+        version="1.0.0",
+        entry_point="brain.test.TestCapability",
+        dependencies=frozenset(),
+        input_contract="text",
+        output_contract="number",
+    )
+
+    matcher = CapabilityMatcher()
+
+    result = matcher.match(
+        required_capabilities=frozenset(
+            {"test.capability"}
+        ),
+        available_capabilities=(
+            capability,
+        ),
+    )
+
+    assert result == frozenset(
+        {"test.capability"}
+    )
+
+    assert capability.input_contract == "text"
+    assert capability.output_contract == "number"

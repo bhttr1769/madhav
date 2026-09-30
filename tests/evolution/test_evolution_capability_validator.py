@@ -235,3 +235,27 @@ def test_validator_rejects_empty_requested_capability():
             ),
             requested_capability="   ",
         )
+
+def test_validator_accepts_capability_with_contracts():
+    capability = CapabilityDescriptor(
+        id="test.capability",
+        name="Test Capability",
+        description="Test capability",
+        version="1.0.0",
+        entry_point="brain.test.TestCapability",
+        dependencies=frozenset(),
+        input_contract="text",
+        output_contract="number",
+    )
+
+    validator = EvolutionCapabilityValidator()
+
+    result = validator.validate(
+        capabilities=(capability,),
+        requested_capability="test.capability",
+    )
+
+    assert result.passed is True
+
+    assert capability.input_contract == "text"
+    assert capability.output_contract == "number"

@@ -149,3 +149,51 @@ def test_composition_is_immutable():
         AttributeError,
     ):
         result.id = "changed"
+
+
+def test_composer_preserves_capability_contracts():
+    first = CapabilityDescriptor(
+        id="text_source",
+        name="Text Source",
+        description="Produces text.",
+        version="1.0.0",
+        entry_point="tests.capabilities.TextSource",
+        dependencies=frozenset(),
+        input_contract="object",
+        output_contract="text",
+    )
+
+    second = CapabilityDescriptor(
+        id="text_length",
+        name="Text Length",
+        description="Calculates text length.",
+        version="1.0.0",
+        entry_point="tests.capabilities.TextLength",
+        dependencies=frozenset(),
+        input_contract="text",
+        output_contract="number",
+    )
+
+    composition = CapabilityComposer().compose(
+        capability_id="text_pipeline",
+        name="Text Pipeline",
+        description="Composed text processing capability.",
+        version="1.0.0",
+        capabilities=(
+            first,
+            second,
+        ),
+    )
+
+    assert composition.capabilities == (
+        first,
+        second,
+    )
+
+    assert composition.capabilities[0] is first
+    assert composition.capabilities[0].input_contract == "object"
+    assert composition.capabilities[0].output_contract == "text"
+
+    assert composition.capabilities[1] is second
+    assert composition.capabilities[1].input_contract == "text"
+    assert composition.capabilities[1].output_contract == "number"

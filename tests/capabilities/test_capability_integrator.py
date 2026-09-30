@@ -42,25 +42,6 @@ def test_integrator_registers_verified_capability():
     ) == capability
 
 
-def test_integrator_rejects_unverified_capability():
-    registry = CapabilityRegistry()
-    integrator = CapabilityIntegrator(registry)
-
-    capability = _capability()
-
-    with pytest.raises(
-        ValueError,
-        match="cannot integrate an unverified capability",
-    ):
-        integrator.integrate(
-            capability=capability,
-            verification_passed=False,
-        )
-
-    assert not registry.has(
-        "web_research"
-    )
-
 
 def test_integrator_rejects_invalid_capability():
     registry = CapabilityRegistry()
@@ -109,3 +90,65 @@ def test_integrator_preserves_duplicate_registration_protection():
             capability=capability,
             verification_passed=True,
         )
+
+def test_integrator_preserves_contracts() -> None:
+    registry = CapabilityRegistry()
+
+    capability = CapabilityDescriptor(
+        id="test.capability",
+        name="Test Capability",
+        description="Test capability.",
+        version="1.0.0",
+        entry_point="tests.capabilities.TestCapability",
+        dependencies=frozenset(),
+        input_contract="text",
+        output_contract="number",
+    )
+
+    integrator = CapabilityIntegrator(
+        registry
+    )
+
+    integrator.integrate(
+        capability,
+        verification_passed=True,
+    )
+
+    registered = registry.get(
+        "test.capability"
+    )
+
+    assert registered is capability
+    assert registered.input_contract == "text"
+    assert registered.output_contract == "number"
+
+def test_integrator_rejects_unverified_capability() -> None:
+    registry = CapabilityRegistry()
+
+    capability = CapabilityDescriptor(
+        id="test.capability",
+        name="Test Capability",
+        description="Test capability.",
+        version="1.0.0",
+        entry_point="tests.capabilities.TestCapability",
+        dependencies=frozenset(),
+        input_contract="text",
+        output_contract="number",
+    )
+
+    integrator = CapabilityIntegrator(
+        registry
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="cannot integrate an unverified capability",
+    ):
+        integrator.integrate(
+            capability,
+            verification_passed=False,
+        )
+
+    assert not registry.has(
+        "test.capability"
+    )

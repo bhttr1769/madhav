@@ -108,3 +108,50 @@ def test_discovery_rejects_non_callable_descriptor():
 
     with pytest.raises(TypeError):
         discovery.discover()
+
+def test_discovery_preserves_contracts() -> None:
+    capability = CapabilityDescriptor(
+        id="test.capability",
+        name="Test Capability",
+        description="Test capability.",
+        version="1.0.0",
+        entry_point="tests.capabilities.TestCapability",
+        dependencies=frozenset(),
+        input_contract="text",
+        output_contract="number",
+    )
+
+    class Provider:
+        @staticmethod
+        def capability_descriptor() -> CapabilityDescriptor:
+            return capability
+
+    discovered = CapabilityDiscovery(
+        providers=(Provider(),)
+    ).discover()
+
+    assert discovered == (capability,)
+    assert discovered[0].input_contract == "text"
+    assert discovered[0].output_contract == "number"
+
+def test_discovery_preserves_default_contracts() -> None:
+    capability = CapabilityDescriptor(
+        id="test.capability",
+        name="Test Capability",
+        description="Test capability.",
+        version="1.0.0",
+        entry_point="tests.capabilities.TestCapability",
+        dependencies=frozenset(),
+    )
+
+    class Provider:
+        @staticmethod
+        def capability_descriptor() -> CapabilityDescriptor:
+            return capability
+
+    discovered = CapabilityDiscovery(
+        providers=(Provider(),)
+    ).discover()
+
+    assert discovered[0].input_contract == "object"
+    assert discovered[0].output_contract == "object"

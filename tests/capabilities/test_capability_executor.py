@@ -241,3 +241,79 @@ def test_execute_does_not_mutate_registry():
     after = registry.all()
 
     assert after == before
+
+def test_execute_preserves_registered_contract_descriptor() -> None:
+    capability = CapabilityDescriptor(
+        id="example",
+        name="Example Capability",
+        description="Test capability",
+        version="1.0.0",
+        entry_point=(
+            "tests.capabilities.test_capability_executor."
+            "ExampleCapability"
+        ),
+        dependencies=frozenset(),
+        input_contract="text",
+        output_contract="number",
+    )
+
+    registry = CapabilityRegistry(
+        capabilities=(capability,),
+    )
+
+    executor = CapabilityExecutor(
+        registry,
+    )
+
+    result = executor.execute(
+        "example",
+        "hello",
+    )
+
+    assert result == "processed: hello"
+
+    registered = registry.get(
+        "example"
+    )
+
+    assert registered is capability
+    assert registered.input_contract == "text"
+    assert registered.output_contract == "number"
+
+def test_execute_preserves_registered_capability_contracts():
+    capability = CapabilityDescriptor(
+        id="example",
+        name="Example Capability",
+        description="Test capability",
+        version="1.0.0",
+        entry_point=(
+            "tests.capabilities.test_capability_executor."
+            "ExampleCapability"
+        ),
+        dependencies=frozenset(),
+        input_contract="text",
+        output_contract="number",
+    )
+
+    registry = CapabilityRegistry(
+        capabilities=(capability,),
+    )
+
+    executor = CapabilityExecutor(
+        registry,
+    )
+
+    result = executor.execute(
+        "example",
+        "hello",
+    )
+
+    assert result == "processed: hello"
+
+    registered = registry.get(
+        "example"
+    )
+
+    assert registered is capability
+    assert registered.input_contract == "text"
+    assert registered.output_contract == "number"

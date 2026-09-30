@@ -83,3 +83,89 @@ def test_factory_rejects_invalid_request():
         factory.create(
             "web_research"
         )
+
+def test_factory_preserves_input_contract() -> None:
+    request = CapabilityDescriptorRequest(
+        id="test.capability",
+        name="Test Capability",
+        description="Test capability.",
+        version="1.0.0",
+        entry_point="tests.capabilities.TestCapability",
+        dependencies=frozenset(),
+        input_contract="text",
+        output_contract="text",
+    )
+
+    descriptor = CapabilityDescriptorFactory().create(
+        request
+    )
+
+    assert descriptor.input_contract == "text"
+
+
+def test_factory_preserves_output_contract() -> None:
+    request = CapabilityDescriptorRequest(
+        id="test.capability",
+        name="Test Capability",
+        description="Test capability.",
+        version="1.0.0",
+        entry_point="tests.capabilities.TestCapability",
+        dependencies=frozenset(),
+        input_contract="text",
+        output_contract="number",
+    )
+
+    descriptor = CapabilityDescriptorFactory().create(
+        request
+    )
+
+    assert descriptor.output_contract == "number"
+
+
+def test_factory_preserves_default_contracts() -> None:
+    request = CapabilityDescriptorRequest(
+        id="test.capability",
+        name="Test Capability",
+        description="Test capability.",
+        version="1.0.0",
+        entry_point="tests.capabilities.TestCapability",
+        dependencies=frozenset(),
+    )
+
+    descriptor = CapabilityDescriptorFactory().create(
+        request
+    )
+
+    assert descriptor.input_contract == "object"
+    assert descriptor.output_contract == "object"
+
+
+def test_factory_preserves_all_descriptor_fields() -> None:
+    request = CapabilityDescriptorRequest(
+        id="test.capability",
+        name="Test Capability",
+        description="Test capability.",
+        version="1.0.0",
+        entry_point="tests.capabilities.TestCapability",
+        dependencies=frozenset(
+            {
+                "dependency.one",
+                "dependency.two",
+            }
+        ),
+        input_contract="text",
+        output_contract="number",
+    )
+
+    descriptor = CapabilityDescriptorFactory().create(
+        request
+    )
+
+    assert descriptor.id == request.id
+    assert descriptor.name == request.name
+    assert descriptor.description == request.description
+    assert descriptor.version == request.version
+    assert descriptor.entry_point == request.entry_point
+    assert descriptor.dependencies == request.dependencies
+    assert descriptor.input_contract == request.input_contract
+    assert descriptor.output_contract == request.output_contract
