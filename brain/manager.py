@@ -35,22 +35,17 @@ class BrainManager:
         document.metadata["fingerprint"] = create_fingerprint(document)
 
         return document
-    
-    def learn(
-        self,
-        file_path: Path | str,
-        ) -> Document:
-        """
-        Learn a document by reading, processing,
-        and storing it in semantic memory.
-        """
 
-        document = self.read(file_path)
+    def learn_document(
+        self,
+        document: Document,
+    ) -> Document:
+        if not isinstance(document, Document):
+            raise TypeError("document must be a Document")
 
         if self._config.memory_runtime.store.has_document(
             document.name
         ):
-
             self._config.memory_runtime.store.remove_document(
                 document.name
             )
@@ -58,19 +53,27 @@ class BrainManager:
         self._config.memory_pipeline.ingest(
             document
         )
-        
-        self._config.memory_runtime.manager.save(self._config.memory_runtime.store)
 
-        self._config.entity_pipeline.process(document)
+        self._config.memory_runtime.manager.save(
+            self._config.memory_runtime.store
+        )
 
-        self._config.relationship_pipeline.process(document)
+        self._config.entity_pipeline.process(
+            document
+        )
 
-        graph_store = (self._config.entity_pipeline._store)
+        self._config.relationship_pipeline.process(
+            document
+        )
 
-        self._config.graph_manager.save(graph_store)
+        graph_store = self._config.entity_pipeline._store
+
+        self._config.graph_manager.save(
+            graph_store
+        )
 
         return document
-    
+
     def search(
         self,
         text: str,
@@ -81,7 +84,7 @@ class BrainManager:
         return self._config.semantic_searcher.search(
             query
         )
-        
+
     def ask(
         self,
         question: str,
@@ -89,4 +92,21 @@ class BrainManager:
 
         return self._config.rag_service.ask(
             question
+        )
+
+    def learn(
+        self,
+        file_path: Path | str,
+    ) -> Document:
+        """
+        Backward-compatible file learning entry point.
+
+        Reads a file through the existing document pipeline and
+        passes the resulting Document through the shared knowledge
+        integration pipeline.
+        """
+        document = self.read(file_path)
+
+        return self.learn_document(
+            document
         )
