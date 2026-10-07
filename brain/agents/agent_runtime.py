@@ -6,6 +6,8 @@ from brain.agents.agent_runtime_lifecycle import (
 )
 from brain.agents.models.agent_definition import AgentDefinition
 from brain.agents.models.agent_runtime_state import AgentRuntimeState
+from brain.agents.models.agent_task import AgentTask
+from brain.agents.models.goal import Goal
 from brain.capabilities.capability_runtime import CapabilityRuntime
 from brain.capabilities.models.capability_execution_request import (
     CapabilityExecutionRequest,
@@ -109,3 +111,42 @@ class AgentRuntime:
         )
 
         return self._capability_runtime.execute(request)
+
+    def can_operate_on_goal(self, goal: Goal) -> bool:
+        if not isinstance(goal, Goal):
+            raise TypeError("goal must be a Goal")
+
+        return goal.agent_id == self.agent_id
+
+    def authorize_goal(self, goal: Goal) -> None:
+        if not self.can_operate_on_goal(goal):
+            raise ValueError(
+                "goal does not belong to the runtime's agent"
+            )
+
+    def can_operate_on_task(
+        self,
+        task: AgentTask,
+        goal: Goal,
+    ) -> bool:
+        if not isinstance(task, AgentTask):
+            raise TypeError("task must be an AgentTask")
+
+        if not isinstance(goal, Goal):
+            raise TypeError("goal must be a Goal")
+
+        return (
+            task.goal_id == goal.id
+            and goal.agent_id == self.agent_id
+        )
+
+    def authorize_task(
+        self,
+        task: AgentTask,
+        goal: Goal,
+    ) -> None:
+        if not self.can_operate_on_task(task, goal):
+            raise ValueError(
+                "task does not belong to the runtime's agent "
+                "through the supplied goal"
+            )

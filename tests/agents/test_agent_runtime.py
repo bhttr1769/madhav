@@ -4,6 +4,8 @@ from brain.agents.agent_runtime import AgentRuntime
 from brain.agents.agent_runtime_lifecycle import AgentRuntimeLifecycleState
 from brain.agents.models.agent_definition import AgentDefinition
 from brain.agents.models.agent_identity import AgentIdentity
+from brain.agents.models.agent_task import AgentTask
+from brain.agents.models.goal import Goal
 from brain.capabilities.capability_runtime import CapabilityRuntime
 from brain.capabilities.models.capability_execution_request import (
     CapabilityExecutionRequest,
@@ -384,3 +386,143 @@ def test_multiple_runtimes_are_independent():
     assert runtime_one.runtime_id != runtime_two.runtime_id
     assert runtime_one.state.state == AgentRuntimeLifecycleState.READY.value
     assert runtime_two.state.state == AgentRuntimeLifecycleState.CREATED.value
+
+
+def test_runtime_can_operate_on_owned_goal():
+    runtime, _ = create_runtime()
+
+    goal = Goal(
+        id="goal-1",
+        agent_id=runtime.agent_id,
+        description="Prepare the project",
+    )
+
+    assert runtime.can_operate_on_goal(goal)
+
+
+def test_runtime_rejects_goal_owned_by_another_agent():
+    runtime, _ = create_runtime()
+
+    goal = Goal(
+        id="goal-1",
+        agent_id="different-agent",
+        description="Prepare the project",
+    )
+
+    assert not runtime.can_operate_on_goal(goal)
+
+
+def test_runtime_authorizes_owned_goal():
+    runtime, _ = create_runtime()
+
+    goal = Goal(
+        id="goal-1",
+        agent_id=runtime.agent_id,
+        description="Prepare the project",
+    )
+
+    runtime.authorize_goal(goal)
+
+
+def test_runtime_rejects_unauthorized_goal():
+    runtime, _ = create_runtime()
+
+    goal = Goal(
+        id="goal-1",
+        agent_id="different-agent",
+        description="Prepare the project",
+    )
+
+    with pytest.raises(ValueError):
+        runtime.authorize_goal(goal)
+
+
+def test_runtime_can_operate_on_task_through_owned_goal():
+    runtime, _ = create_runtime()
+
+    goal = Goal(
+        id="goal-1",
+        agent_id=runtime.agent_id,
+        description="Prepare the project",
+    )
+
+    task = AgentTask(
+        id="task-1",
+        goal_id=goal.id,
+        description="Inspect the repository",
+    )
+
+    assert runtime.can_operate_on_task(task, goal)
+
+
+def test_runtime_rejects_task_from_different_goal():
+    runtime, _ = create_runtime()
+
+    goal = Goal(
+        id="goal-1",
+        agent_id=runtime.agent_id,
+        description="Prepare the project",
+    )
+
+    task = AgentTask(
+        id="task-1",
+        goal_id="different-goal",
+        description="Inspect the repository",
+    )
+
+    assert not runtime.can_operate_on_task(task, goal)
+
+
+def test_runtime_rejects_task_through_goal_owned_by_another_agent():
+    runtime, _ = create_runtime()
+
+    goal = Goal(
+        id="goal-1",
+        agent_id="different-agent",
+        description="Prepare the project",
+    )
+
+    task = AgentTask(
+        id="task-1",
+        goal_id=goal.id,
+        description="Inspect the repository",
+    )
+
+    assert not runtime.can_operate_on_task(task, goal)
+
+
+def test_runtime_authorizes_owned_task():
+    runtime, _ = create_runtime()
+
+    goal = Goal(
+        id="goal-1",
+        agent_id=runtime.agent_id,
+        description="Prepare the project",
+    )
+
+    task = AgentTask(
+        id="task-1",
+        goal_id=goal.id,
+        description="Inspect the repository",
+    )
+
+    runtime.authorize_task(task, goal)
+
+
+def test_runtime_rejects_unauthorized_task():
+    runtime, _ = create_runtime()
+
+    goal = Goal(
+        id="goal-1",
+        agent_id="different-agent",
+        description="Prepare the project",
+    )
+
+    task = AgentTask(
+        id="task-1",
+        goal_id=goal.id,
+        description="Inspect the repository",
+    )
+
+    with pytest.raises(ValueError):
+        runtime.authorize_task(task, goal)
