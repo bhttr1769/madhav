@@ -85,6 +85,33 @@ class BrowserCapability:
 
         self._executor = action_executor
 
+
+    def configure_safety_service(
+        self,
+        safety_service: SafetyService,
+    ) -> None:
+        if not isinstance(safety_service, SafetyService):
+            raise TypeError(
+                "safety_service must be a SafetyService"
+            )
+
+        if self._executor is not None:
+            raise RuntimeError(
+                "cannot configure safety service after "
+                "browser executor initialization"
+            )
+
+        if (
+            self._safety_service is not None
+            and self._safety_service is not safety_service
+        ):
+            raise RuntimeError(
+                "browser safety service is already configured"
+            )
+
+        self._safety_service = safety_service
+
+
     def capability_descriptor(self) -> CapabilityDescriptor:
         return CapabilityDescriptor(
             id=self.CAPABILITY_ID,
@@ -251,3 +278,13 @@ class BrowserCapability:
 
 
 browser_capability = BrowserCapability()
+
+
+def configure_browser_capability(
+    safety_service: SafetyService,
+) -> BrowserCapability:
+    """Configure the registered browser capability with safety enforcement."""
+    browser_capability.configure_safety_service(
+        safety_service
+    )
+    return browser_capability

@@ -15,6 +15,9 @@ from brain.capabilities.models.capability_execution_request import (
 from brain.capabilities.models.capability_execution_result import (
     CapabilityExecutionResult,
 )
+from brain.organization.authority_execution_context import (
+    authority_execution_context,
+)
 
 
 class AgentRuntime:
@@ -23,16 +26,13 @@ class AgentRuntime:
         agent_definition: AgentDefinition,
         capability_runtime: CapabilityRuntime,
         runtime_id: str | None = None,
+        organization_id: str | None = None,
     ):
         if not isinstance(agent_definition, AgentDefinition):
-            raise TypeError(
-                "agent_definition must be an AgentDefinition"
-            )
+            raise TypeError("agent_definition must be an AgentDefinition")
 
         if not isinstance(capability_runtime, CapabilityRuntime):
-            raise TypeError(
-                "capability_runtime must be a CapabilityRuntime"
-            )
+            raise TypeError("capability_runtime must be a CapabilityRuntime")
 
         if runtime_id is None:
             runtime_id = str(uuid4())
@@ -43,8 +43,16 @@ class AgentRuntime:
         if not runtime_id.strip():
             raise ValueError("runtime_id must not be empty")
 
+        if organization_id is not None:
+            if not isinstance(organization_id, str):
+                raise TypeError("organization_id must be a string or None")
+
+            if not organization_id.strip():
+                raise ValueError("organization_id must not be empty")
+
         self._agent_definition = agent_definition
         self._capability_runtime = capability_runtime
+        self._organization_id = organization_id
 
         self._state = AgentRuntimeState(
             runtime_id=runtime_id,
@@ -65,6 +73,10 @@ class AgentRuntime:
         return self._state.agent_id
 
     @property
+    def organization_id(self) -> str | None:
+        return self._organization_id
+
+    @property
     def state(self) -> AgentRuntimeState:
         return self._state
 
@@ -76,7 +88,6 @@ class AgentRuntime:
             self._state,
             target_state,
         )
-
         return self._state
 
     def execute_capability(
@@ -85,14 +96,10 @@ class AgentRuntime:
         input_data: object,
     ) -> CapabilityExecutionResult:
         if not isinstance(capability_id, str):
-            raise TypeError(
-                "capability_id must be a string"
-            )
+            raise TypeError("capability_id must be a string")
 
         if not capability_id.strip():
-            raise ValueError(
-                "capability_id must not be empty"
-            )
+            raise ValueError("capability_id must not be empty")
 
         if self._state.state != AgentRuntimeLifecycleState.RUNNING.value:
             raise RuntimeError(
@@ -110,7 +117,11 @@ class AgentRuntime:
             input_data=input_data,
         )
 
-        return self._capability_runtime.execute(request)
+        with authority_execution_context(
+            agent_id=self.agent_id,
+            organization_id=self._organization_id,
+        ):
+            return self._capability_runtime.execute(request)
 
     def can_operate_on_goal(self, goal: Goal) -> bool:
         if not isinstance(goal, Goal):
