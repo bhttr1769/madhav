@@ -1,3 +1,4 @@
+
 from uuid import uuid4
 
 from brain.agents.agent_runtime_lifecycle import (
@@ -94,6 +95,8 @@ class AgentRuntime:
         self,
         capability_id: str,
         input_data: object,
+        *,
+        authority_agent_id: str | None = None,
     ) -> CapabilityExecutionResult:
         if not isinstance(capability_id, str):
             raise TypeError("capability_id must be a string")
@@ -112,13 +115,27 @@ class AgentRuntime:
                 f"with agent '{self.agent_id}'"
             )
 
+        if authority_agent_id is None:
+            execution_agent_id = self.agent_id
+        else:
+            if not isinstance(authority_agent_id, str):
+                raise TypeError("authority_agent_id must be a string")
+
+            if not authority_agent_id.strip():
+                raise ValueError("authority_agent_id must not be empty")
+
+            execution_agent_id = authority_agent_id
+
         request = CapabilityExecutionRequest(
             capability_id=capability_id,
             input_data=input_data,
         )
 
+        # RemoteTaskExecutionReceiver must authorize the requesting agent
+        # before passing authority_agent_id. This context makes that identity
+        # visible to existing capability-level SafetyService checks.
         with authority_execution_context(
-            agent_id=self.agent_id,
+            agent_id=execution_agent_id,
             organization_id=self._organization_id,
         ):
             return self._capability_runtime.execute(request)

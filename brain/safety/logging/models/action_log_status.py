@@ -22,3 +22,5 @@ class ActionLogStatus(Enum):
     COMPLETED = "completed"
 
     FAILED = "failed"
+  
+    UNCERTAIN = "uncertain"

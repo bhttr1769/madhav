@@ -16,6 +16,8 @@ def test_action_log_event_values():
         "execution_started",
         "execution_completed",
         "execution_failed",
+        "execution_failed",
+        "outcome_uncertain",
     }
 
     actual = {

@@ -36,3 +36,7 @@ class ActionLogEvent(Enum):
     EXECUTION_FAILED = (
         "execution_failed"
     )
+
+    OUTCOME_UNCERTAIN = (
+        "outcome_uncertain"
+    )
